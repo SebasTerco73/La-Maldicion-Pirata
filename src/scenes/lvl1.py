@@ -1,8 +1,10 @@
 import pygame
 import sys
+import random
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL1, SOUNDS_LVL1, LVL1_GROUND_Y
 from .scene import Scene
 from characters.player import Player
+from characters.enemy import Crab
 
 class Level1(Scene):
     def __init__(self, screen):
@@ -16,13 +18,22 @@ class Level1(Scene):
 
         self.mouse_visible = False
         self.init_audio()
+        # Donde inicia el personaje en el eje x
         self.init = SCREEN_WIDTH/2 - 140
 
         # Grupo de sprites
         self.all_sprites = pygame.sprite.Group()
         self.player = Player(self.init, 0, LVL1_GROUND_Y)
         self.all_sprites.add(self.player)
+        self.player.rect.x
 
+        
+        self.all_crabs = pygame.sprite.Group()
+        for _ in range(10):  # Generar 10 NPCs
+            x = random.randint(400, 800)
+            crab = Crab(x,LVL1_GROUND_Y)
+            self.all_crabs.add(crab)
+            crab.rect.x
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -31,12 +42,18 @@ class Level1(Scene):
                 pygame.quit()
                 sys.exit()
 
-    def update(self):
+    def update(self, all_crabs):
         keys = pygame.key.get_pressed()
-
+        
         # Scroll infinito
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.bg_x -= self.scroll_speed
+            for crab in all_crabs:
+                crab.rect.x += self.scroll_speed
+            # for ind in range(len(self.all_crabs)):
+            #     pass    
+
+
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
             self.bg_x += self.scroll_speed
 
@@ -68,6 +85,7 @@ class Level1(Scene):
         while running:
             self.draw()
             self.handle_events()
-            self.update()  
+
+            self.update(self.all_crabs)
             pygame.display.flip()
             self.clock.tick(FPS)

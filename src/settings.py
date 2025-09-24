@@ -5,6 +5,10 @@ IMAGES = {
     "player": "assets/images/player.png",
 }
 
+ENEMIES = {
+    "crab": "assets/images/crab.png",
+}
+
 IMAGES_MENU = {
     "menu_bg": "assets/images/menu_bg.png",
 }
