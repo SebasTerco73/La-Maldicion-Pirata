@@ -1,31 +1,44 @@
 import pygame
-from settings import IMAGES, LVL1_GROUND_Y
-from .character import Character
+from utils.constants import (
+    IMAGES_PATH, FPS, PLAYER_CONFIG, LVL1_CONFIG
+)
+from characters.character import Character
 
 class Player(Character):
-    def __init__(self, x, y,ground):
-        super().__init__(IMAGES["player"], x, y, width=150, height=150, speed=5)
+    def __init__(self, x: float, y: float, ground: float, dt: float):
+        super().__init__(
+            f"{IMAGES_PATH}/player.png",
+            x, y,
+            width=PLAYER_CONFIG["WIDTH"],
+            height=PLAYER_CONFIG["HEIGHT"],
+            speed=PLAYER_CONFIG["SPEED"]
+        )
         self.vel_y = 0
-        self.gravity = 1     
-        self.jump_strength = -15  # impulso del salto (negativo porque sube)
+        self.gravity = PLAYER_CONFIG["GRAVITY"]
+        self.jump_strength = PLAYER_CONFIG["JUMP_STRENGTH"]
         self.on_ground = False
         self.ground_y = ground
+        self.posX = 50.0
+        self.speed = 20.0
        
-    def handle_input(self):
+    def handle_input(self,dt):
         keys = pygame.key.get_pressed()
-        dx = 0
-
-        # if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        #     dx = -1
-        # if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        #     dx = 1
+        # Reiniciamos el movimiento horizontal en cada frame
+        self.posX = 0
+        
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            self.posX = -self.speed
+        
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.posX = self.speed
         
         if (keys[pygame.K_w] or keys[pygame.K_UP]) and self.on_ground:
             self.vel_y = self.jump_strength
             self.on_ground = False
 
-        if dx:
-            self.move(dx,0)
+        # Aplicamos el movimiento horizontal con delta time
+        if self.posX:
+            self.move(self.posX * dt, 0)
     
     def apply_gravity(self):
         """Aplica gravedad y limita el suelo"""
@@ -38,8 +51,8 @@ class Player(Character):
             self.vel_y = 0
             self.on_ground = True
 
-    def update(self):
-        self.handle_input()
+    def update(self,dt):
+        self.handle_input(dt)
         self.clamp_to_screen()
         self.apply_gravity()
 

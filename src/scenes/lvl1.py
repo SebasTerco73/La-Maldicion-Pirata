@@ -1,73 +1,91 @@
 import pygame
 import sys
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL1, SOUNDS_LVL1, LVL1_GROUND_Y
-from .scene import Scene
+from typing import Optional
+from utils.constants import (
+    SCREEN_WIDTH, SCREEN_HEIGHT, FPS, 
+    IMAGES_PATH, SOUNDS_PATH, LVL1_CONFIG,
+    AUDIO_CONFIG
+)
+from utils.resource_manager import ResourceManager
+from states.game_state import GameState
+from scenes.scene import Scene
 from characters.player import Player
+from ui.cursor import Cursor
 
 class Level1(Scene):
-    def __init__(self, screen):
+    def __init__(self, screen: pygame.Surface, dt: float):
+        """Inicializa el nivel 1.
+        
+        Args:
+            screen: Superficie de la pantalla
+            dt: Delta time
+        """
         super().__init__(screen)
         self.clock = pygame.time.Clock()
-        self.background = pygame.image.load(IMAGES_LVL1["level1_bg"]).convert()
+        self.resource_manager = ResourceManager.get_instance()
+        self.game_state = GameState.get_instance()
+        
+        # Cargar recursos
+        self.background = self.resource_manager.load_image(f"{IMAGES_PATH}/lvl1.jpg")
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-        self.bg_x = 0  # posición inicial del fondo
-        self.scroll_speed = 4
+        # Configuración del nivel
+        self.bg_x = 0
+        self.scroll_speed = LVL1_CONFIG["SCROLL_SPEED"]
+        self.init_pos = SCREEN_WIDTH/2 - 140
 
-        self.mouse_visible = False
+        # UI
+        self.cursor = Cursor()
+        self.cursor.hide()  # Ocultar cursor en el nivel
+
+        # Inicializar audio
         self.init_audio()
-        self.init = SCREEN_WIDTH/2 - 140
 
         # Grupo de sprites
         self.all_sprites = pygame.sprite.Group()
-        self.player = Player(self.init, 0, LVL1_GROUND_Y)
+        self.player = Player(self.init_pos, 0, LVL1_CONFIG["GROUND_Y"], dt)
         self.all_sprites.add(self.player)
 
-
-    def handle_events(self):
+    def handle_events(self) -> None:
+        """Maneja los eventos del juego."""
         for event in pygame.event.get():
             self.handle_global_events(event)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-    def update(self):
-        keys = pygame.key.get_pressed()
+    def update(self, dt: float) -> None:
+        """Actualiza los elementos del nivel.
+        
+        Args:
+            dt: Delta time
+        """
+        self.all_sprites.update(dt)
 
-        # Scroll infinito
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.bg_x -= self.scroll_speed
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.bg_x += self.scroll_speed
-
-        # Reiniciar cuando se salga del ancho
-        if self.bg_x <= -SCREEN_WIDTH:
-            self.bg_x = 0
-        if self.bg_x >= SCREEN_WIDTH:
-            self.bg_x = 0
-
-        self.all_sprites.update()
-
-    def draw(self):
+    def draw(self) -> None:
+        """Dibuja los elementos del nivel."""
         self.screen.blit(self.background, (self.bg_x, 0))
-        self.screen.blit(self.background, (self.bg_x + SCREEN_WIDTH, 0))
-        self.screen.blit(self.background, (self.bg_x - SCREEN_WIDTH, 0))
         self.all_sprites.draw(self.screen)   
-        self.draw_cursor()
+        self.cursor.draw(self.screen)
 
-    def init_audio(self):
-        # Solo inicializa si no se hizo ya
+    def init_audio(self) -> None:
+        """Inicializa el sistema de audio."""
         if not pygame.mixer.get_init():
             pygame.mixer.init()
-        pygame.mixer.music.set_volume(0.2)
-        pygame.mixer.music.load(SOUNDS_LVL1["level1_sound"])
+        pygame.mixer.music.set_volume(AUDIO_CONFIG["MUSIC_VOLUME"])
+        pygame.mixer.music.load(f"{SOUNDS_PATH}/lvl1_sound.mp3")
         pygame.mixer.music.play(-1)
 
-    def run(self):
+    def run(self, dt: float) -> None:
+        """Ejecuta el bucle principal del nivel.
+        
+        Args:
+            dt: Delta time
+        """
         running = True
         while running:
             self.draw()
             self.handle_events()
-            self.update()  
+            self.update(dt)  
             pygame.display.flip()
             self.clock.tick(FPS)
