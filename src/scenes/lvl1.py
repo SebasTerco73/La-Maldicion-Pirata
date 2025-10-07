@@ -1,163 +1,204 @@
+# lvl1.py
+import random
+import time
 import pygame
 import sys
-import random
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL1, SOUNDS_LVL1, LVL1_GROUND_Y, WHITE
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL1, SOUNDS_LVL1, LVL1_GROUND_Y, WHITE, FONTS
 from .scene import Scene
 from characters.player import Player
-from characters.enemy import Crab
-from states.event_system import EventSystem, GameEvents
-
+from characters.enemy import Crab 
 class Level1(Scene):
-    def __init__(self, screen, dt):
+    def __init__(self, screen):
         super().__init__(screen)
         self.clock = pygame.time.Clock()
         self.background = pygame.image.load(IMAGES_LVL1["level1_bg"]).convert()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
-
-        self.bg_x = 0  # posición inicial del fondo
-        self.scroll_speed = 4
-
         self.mouse_visible = False
         self.init_audio()
-        self.init = SCREEN_WIDTH/2 - 140
+        # Estado de juego
+        self.state = "playing"  # playing | gameover
+        self.result = None       # 'win' | 'lose' | None
+        self.running = True
 
-        # Grupos de sprites
+        # Objetos del nivel
         self.all_sprites = pygame.sprite.Group()
-        self.enemies = pygame.sprite.Group()
-        
-        # Crear jugador
-        self.player = Player(self.init, 0, LVL1_GROUND_Y, dt)
+        self.all_crabs = pygame.sprite.Group()
+        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
         self.all_sprites.add(self.player)
-        
-        # Generar cangrejos
-        self.spawn_crabs(5)  # Iniciar con 5 cangrejos
-        
-        # Estado del juego
-        self.game_over = False
-        self.victory = False
-        
-        # Sistema de eventos
-        self.event_system = EventSystem.get_instance()
-        self.event_system.subscribe(GameEvents.PLAYER_DEATH, self.on_player_death)
-
-    def spawn_crabs(self, count):
-        """Genera cangrejos enemigos en posiciones aleatorias"""
-        for _ in range(count):
-            x = random.randint(100, SCREEN_WIDTH - 100)
-            crab = Crab(x, 0, LVL1_GROUND_Y)
-            self.all_sprites.add(crab)
-            self.enemies.add(crab)
-
+        for _ in range(10):
+            randomPos = random.randint(0, SCREEN_WIDTH - 100)  # Generar 10 NPCs
+            crab = Crab(randomPos, LVL1_GROUND_Y)
+            self.all_crabs.add(crab)
+        self.time_trascurrido = pygame.time.get_ticks()
+            
     def handle_events(self):
         for event in pygame.event.get():
             self.handle_global_events(event)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN and (self.game_over or self.victory):
-                if event.key == pygame.K_RETURN:
+            # Controles de fin de partida
+            if self.state != "playing" and event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
                     self.reset_level()
+                elif event.key in (pygame.K_ESCAPE, pygame.K_m):
+                    # Volver al menú (romper el bucle de run)
+                    self.running = False
 
     def update(self, dt):
-        if not self.game_over and not self.victory:
-            # Actualizar jugador
-            self.player.update(dt)
-            
-            # Actualizar enemigos individualmente
-            for enemy in list(self.enemies):  # Crear una copia de la lista para evitar modificaciones durante la iteración
-                if enemy in self.enemies:  # Verificar que el enemigo aún existe
-                    enemy.update(dt, self.player)
-            
-            # Comprobar victoria (cuando no quedan enemigos)
-            if len(self.enemies) == 0:
-                self.victory = True
-                self.game_over = True
-                self.show_victory_message()
-                
-            # Comprobar derrota
-            if self.player.health <= 0:
-                self.game_over = True
+        # Si el juego terminó, no actualizar lógicas
+        if self.state != "playing":
+            return
+
+        self.all_sprites.update(dt)
+        # Actualizamos cada cangrejo pasándole el jugador para manejo de colisiones
+        for crab in self.all_crabs.sprites():
+            # Cada Crab.define update(self, dt, player=None)
+            try:
+                crab.update(dt, self.player)
+            except TypeError:
+                # Retrocompatibilidad: si el método no acepta player, llamarlo sin él
+                crab.update(dt)
+
+        # Chequear condiciones de fin
+        if getattr(self.player, 'health', 1) <= 0:
+            self.state = "gameover"
+            self.result = "lose"
+        elif len(self.all_crabs) == 0:
+            self.state = "gameover"
+            self.result = "win"
+
+        # Timer en pantalla
+        time_init = (pygame.time.get_ticks() - self.time_trascurrido) / 1000
+        time_text = f"{time_init:.0f}"
+
+        self.text_font = self.load_font(size=40)
+        self.time_surface = self.text_font.render(time_text, True, WHITE)
+        time_rect = self.time_surface.get_rect(center=(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 20))
+        self.screen.blit(self.time_surface, time_rect)
 
     def draw(self):
-        self.screen.blit(self.background, (self.bg_x, 0))
+        self.screen.blit(self.background, (0, 0))
         self.all_sprites.draw(self.screen)
-        
-        # Dibujar barra de vida
-        health_width = 200
-        health_height = 20
-        health_x = 20
-        health_y = 20
-        
-        # Borde de la barra de vida
-        pygame.draw.rect(self.screen, WHITE, (health_x-2, health_y-2, health_width+4, health_height+4))
-        # Barra de vida
-        health_percent = max(0, self.player.health / 100.0)
-        pygame.draw.rect(self.screen, (255, 0, 0), 
-                        (health_x, health_y, health_width * health_percent, health_height))
-        
-        # Dibujar mensajes de estado
-        if self.game_over:
-            self.draw_message()
-            
+        # Dibujar barra de vida del jugador
+        self.draw_health_bar()
         self.draw_cursor()
+        self.all_crabs.draw(self.screen)
+        # Si terminó el juego, dibujar overlay
+        if self.state != "playing":
+            self.draw_end_overlay()
 
     def init_audio(self):
-        # Solo inicializa si no se hizo ya
         if not pygame.mixer.get_init():
             pygame.mixer.init()
         pygame.mixer.music.set_volume(0.2)
         pygame.mixer.music.load(SOUNDS_LVL1["level1_sound"])
         pygame.mixer.music.play(-1)
-    
-    def draw_message(self):
-        """Dibuja el mensaje de victoria o derrota"""
-        font = pygame.font.Font(None, 74)
-        if self.victory:
-            text = font.render('¡Has Ganado!', True, WHITE)
-        else:
-            text = font.render('Game Over', True, WHITE)
-        
-        text_rect = text.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
-        self.screen.blit(text, text_rect)
-        
-        # Instrucciones para reiniciar
-        font_small = pygame.font.Font(None, 36)
-        restart_text = font_small.render('Presiona ENTER para reiniciar', True, WHITE)
-        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 50))
-        self.screen.blit(restart_text, restart_rect)
 
-    def show_victory_message(self):
-        """Muestra el mensaje de victoria"""
-        self.victory = True
-        self.game_over = True
-
-    def on_player_death(self):
-        """Manejador para cuando el jugador muere"""
-        self.game_over = True
-        
-    def reset_level(self):
-        """Reinicia el nivel al estado inicial"""
-        self.game_over = False
-        self.victory = False
-        
-        # Limpiar sprites
-        self.all_sprites.empty()
-        self.enemies.empty()
-        
-        # Recrear jugador
-        self.player = Player(self.init, 0, LVL1_GROUND_Y, 0)
-        self.all_sprites.add(self.player)
-        
-        # Regenerar enemigos
-        self.spawn_crabs(5)
-
-    def run(self, dt):
-        running = True
-        while running:
+    def run(self):
+        self.running = True
+        while self.running:
+            dt = self.clock.tick(FPS) / 1000
             self.draw()
             self.handle_events()
-            self.update(dt)  
+            self.update(dt)
             pygame.display.flip()
-            self.clock.tick(FPS)
+
+    def draw_end_overlay(self):
+        # Fondo semitransparente
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 170))
+        self.screen.blit(overlay, (0, 0))
+
+        title = "GANASTE" if self.result == "win" else "PERDISTE"
+        title_color = (0, 200, 70) if self.result == "win" else (200, 40, 40)
+
+        title_font = self.load_font(size=72)
+        info_font = self.load_font(size=28)
+
+        title_surf = title_font.render(title, True, title_color)
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
+        self.screen.blit(title_surf, title_rect)
+
+        lines = [
+            "R - Reintentar",
+            "M o ESC - Volver al menú",
+        ]
+        for i, text in enumerate(lines):
+            surf = info_font.render(text, True, WHITE)
+            rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
+            self.screen.blit(surf, rect)
+
+    def reset_level(self):
+        # Vaciar grupos
+        self.all_sprites.empty()
+        self.all_crabs.empty()
+
+        # Crear jugador y enemigos nuevamente
+        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
+        self.all_sprites.add(self.player)
+        for _ in range(10):
+            randomPos = random.randint(0, SCREEN_WIDTH - 100)
+            crab = Crab(randomPos, LVL1_GROUND_Y)
+            self.all_crabs.add(crab)
+
+        # Resetear estado
+        self.state = "playing"
+        self.result = None
+        self.time_trascurrido = pygame.time.get_ticks()
+
+    def draw_health_bar(self):
+        """Dibuja una barra de vida simple en la esquina superior izquierda."""
+        if not hasattr(self, 'player') or self.player is None:
+            return
+        # Parámetros de la barra
+        bar_width = 220
+        bar_height = 22
+        x, y = 20, 20
+        max_health = getattr(self.player, 'max_health', 100)
+        current = getattr(self.player, 'health', max_health)
+        # Normalizar valores
+        if max_health <= 0:
+            ratio = 0
+        else:
+            current = max(0, min(current, max_health))
+            ratio = current / max_health
+
+        # Rectángulos
+        outline_rect = pygame.Rect(x, y, bar_width, bar_height)
+        fill_rect = pygame.Rect(x, y, int(bar_width * ratio), bar_height)
+
+        # Color por umbral de vida
+        if ratio > 0.6:
+            base_color = (0, 200, 70)      # Verde
+        elif ratio > 0.3:
+            base_color = (230, 200, 0)     # Amarillo
+        else:
+            base_color = (200, 40, 40)     # Rojo
+
+        # Parpadeo cuando está invulnerable
+        invul = getattr(self.player, 'invulnerable', False)
+        if invul:
+            # Alternar color cada ~150ms
+            blink = (pygame.time.get_ticks() // 150) % 2 == 0
+            if blink:
+                base_color = (255, 255, 255)  # Blanco al parpadear
+
+        # Dibujar fondo de la barra (gris oscuro)
+        pygame.draw.rect(self.screen, (50, 50, 50), outline_rect)
+        # Relleno según la vida (color dinámico)
+        if fill_rect.width > 0:
+            pygame.draw.rect(self.screen, base_color, fill_rect)
+        # Borde blanco
+        pygame.draw.rect(self.screen, WHITE, outline_rect, 2)
+
+        # Texto de HP
+        try:
+            font = self.load_font(size=20)
+        except Exception:
+            font = None
+        if font:
+            hp_text = f"HP: {int(current)}/{int(max_health)}"
+            text_surf = font.render(hp_text, True, WHITE)
+            text_rect = text_surf.get_rect(midleft=(x + 8, y + bar_height // 2))
+            self.screen.blit(text_surf, text_rect)

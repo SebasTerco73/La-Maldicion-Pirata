@@ -3,7 +3,6 @@ IMAGES = {
     "icon": "assets/images/icon.png",
     "cursor": "assets/images/mouse.png",
     "player": "assets/images/player.png",
-    "cangrejo": "assets/images/cangrejo.png",
 }
 
 IMAGES_MENU = {
@@ -12,6 +11,7 @@ IMAGES_MENU = {
 
 IMAGES_LVL1 = {
     "level1_bg": "assets/images/lvl1.jpg",
+    "enemy_crab": "assets/images/cangrejo.png",
 }
 
 # --- Sonidos ---
