@@ -1,113 +1,110 @@
-from typing import List, Any, Callable
-from utils.constants import GameStates
+"""
+Sistema de estados del juego.
+Implementa el patrón Observer para notificar cambios de estado.
+"""
+from typing import List, Protocol, Dict, Any
+import logging
 
-class Observer:
-    """Interfaz para el patrón observador."""
-    
-    def update(self, subject: 'GameState') -> None:
-        """Actualiza el observador cuando el estado cambia.
-        
-        Args:
-            subject: El estado del juego que ha cambiado.
-        """
+class Observer(Protocol):
+    """Protocolo para observadores de estado."""
+    def update(self, state: 'GameState') -> None:
+        """Actualiza el observador con el nuevo estado."""
         pass
 
 class GameState:
-    """Gestiona el estado global del juego."""
-    
-    _instance = None
-    
+    """
+    Clase que maneja el estado global del juego.
+    Implementa el patrón Observer para notificar cambios.
+    """
     def __init__(self):
-        """Inicializa el estado del juego."""
-        self.score: int = 0
-        self.health: int = 100
-        self.current_state: GameStates = GameStates.MENU
-        self.observers: List[Observer] = []
-        self._custom_states: dict = {}
-    
-    @classmethod
-    def get_instance(cls) -> 'GameState':
-        """Obtiene la instancia única del estado del juego (patrón Singleton)."""
-        if cls._instance is None:
-            cls._instance = GameState()
-        return cls._instance
-    
+        self._observers: List[Observer] = []
+        self._state: Dict[str, Any] = {
+            "score": 0,
+            "health": 100,
+            "level": 1,
+            "game_state": "menu"
+        }
+        self._logger = logging.getLogger(__name__)
+
     def add_observer(self, observer: Observer) -> None:
-        """Añade un observador al estado.
-        
-        Args:
-            observer: El observador a añadir.
-        """
-        if observer not in self.observers:
-            self.observers.append(observer)
-    
+        """Añade un nuevo observador."""
+        self._observers.append(observer)
+        self._logger.info(f"Nuevo observador añadido: {observer.__class__.__name__}")
+
     def remove_observer(self, observer: Observer) -> None:
-        """Elimina un observador del estado.
-        
-        Args:
-            observer: El observador a eliminar.
-        """
-        if observer in self.observers:
-            self.observers.remove(observer)
-    
+        """Elimina un observador."""
+        self._observers.remove(observer)
+        self._logger.info(f"Observador eliminado: {observer.__class__.__name__}")
+
     def notify_observers(self) -> None:
         """Notifica a todos los observadores de un cambio en el estado."""
-        for observer in self.observers:
+        for observer in self._observers:
             observer.update(self)
-    
-    def change_game_state(self, new_state: GameStates) -> None:
-        """Cambia el estado actual del juego.
-        
-        Args:
-            new_state: El nuevo estado del juego.
+
+    def set_state(self, key: str, value: Any) -> None:
         """
-        self.current_state = new_state
-        self.notify_observers()
-    
-    def update_score(self, points: int) -> None:
-        """Actualiza la puntuación del juego.
+        Actualiza un valor en el estado y notifica a los observadores.
         
         Args:
-            points: Puntos a añadir (o restar si es negativo).
+            key: Clave del estado a actualizar
+            value: Nuevo valor
         """
-        self.score += points
-        self.notify_observers()
-    
-    def update_health(self, amount: int) -> None:
-        """Actualiza la salud del jugador.
-        
-        Args:
-            amount: Cantidad de salud a añadir (o restar si es negativo).
+        if key in self._state:
+            old_value = self._state[key]
+            self._state[key] = value
+            self._logger.info(f"Estado actualizado: {key} = {value} (anterior: {old_value})")
+            self.notify_observers()
+        else:
+            self._logger.warning(f"Intento de actualizar estado inexistente: {key}")
+
+    def get_state(self, key: str) -> Any:
         """
-        self.health = max(0, min(100, self.health + amount))
-        self.notify_observers()
-    
-    def set_custom_state(self, key: str, value: Any) -> None:
-        """Establece un estado personalizado.
+        Obtiene un valor del estado.
         
         Args:
-            key: Clave del estado personalizado.
-            value: Valor del estado personalizado.
-        """
-        self._custom_states[key] = value
-        self.notify_observers()
-    
-    def get_custom_state(self, key: str, default: Any = None) -> Any:
-        """Obtiene un estado personalizado.
-        
-        Args:
-            key: Clave del estado personalizado.
-            default: Valor por defecto si la clave no existe.
+            key: Clave del estado a obtener
             
         Returns:
-            El valor del estado personalizado o el valor por defecto.
+            Valor del estado
         """
-        return self._custom_states.get(key, default)
-    
-    def reset(self) -> None:
-        """Reinicia el estado del juego a sus valores iniciales."""
-        self.score = 0
-        self.health = 100
-        self.current_state = GameStates.MENU
-        self._custom_states.clear()
-        self.notify_observers()
+        return self._state.get(key)
+
+    @property
+    def score(self) -> int:
+        """Obtiene la puntuación actual."""
+        return self._state["score"]
+
+    @score.setter
+    def score(self, value: int) -> None:
+        """Establece la puntuación actual."""
+        self.set_state("score", value)
+
+    @property
+    def health(self) -> int:
+        """Obtiene la salud actual."""
+        return self._state["health"]
+
+    @health.setter
+    def health(self, value: int) -> None:
+        """Establece la salud actual."""
+        self.set_state("health", value)
+
+    @property
+    def level(self) -> int:
+        """Obtiene el nivel actual."""
+        return self._state["level"]
+
+    @level.setter
+    def level(self, value: int) -> None:
+        """Establece el nivel actual."""
+        self.set_state("level", value)
+
+    @property
+    def game_state(self) -> str:
+        """Obtiene el estado actual del juego."""
+        return self._state["game_state"]
+
+    @game_state.setter
+    def game_state(self, value: str) -> None:
+        """Establece el estado actual del juego."""
+        self.set_state("game_state", value)

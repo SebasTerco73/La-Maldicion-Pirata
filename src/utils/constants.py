@@ -1,5 +1,19 @@
+"""
+Constantes y configuraciones globales del juego.
+"""
 from enum import Enum
 from typing import Dict, Any
+
+# Configuración de pantalla
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+FPS = 60
+
+# Colores
+class Colors:
+    WHITE = (255, 255, 255)
+    BLUE = (0, 0, 255)
+    RED = (120, 6, 6)
 
 # Estados del juego
 class GameStates(Enum):
@@ -8,48 +22,48 @@ class GameStates(Enum):
     PAUSED = "paused"
     GAME_OVER = "game_over"
 
-# Configuración de pantalla
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-FPS = 60
-
-# Colores
-COLORS = {
-    "WHITE": (255, 255, 255),
-    "BLUE": (0, 0, 255),
-    "RED": (120, 6, 6),
-    "BLACK": (0, 0, 0)
+# Configuración de jugador
+PLAYER_CONFIG = {
+    "width": 30,
+    "height": 30,
+    "speed": 25.0,
+    "jump_strength": -15,
+    "gravity": 1.0
 }
 
-# Rutas de recursos
-ASSETS_PATH = "assets"
-IMAGES_PATH = f"{ASSETS_PATH}/images"
-SOUNDS_PATH = f"{ASSETS_PATH}/sounds"
-FONTS_PATH = f"{ASSETS_PATH}/fonts"
-
-# Configuración del jugador
-PLAYER_CONFIG = {
-    "WIDTH": 100,
-    "HEIGHT": 100,
-    "SPEED": 5,
-    "JUMP_STRENGTH": -15,
-    "GRAVITY": 1
+# Configuración de la física
+PHYSICS_CONFIG = {
+    "gravity": 1.0,
+    "ground_y": 500
 }
 
 # Configuración del menú
 MENU_CONFIG = {
-    "FONT_SIZE": 40,
-    "MARGIN": 20
+    "font_size": 40,
+    "margin": 20
 }
 
-# Configuración del nivel 1
-LVL1_CONFIG = {
-    "GROUND_Y": 500,
-    "SCROLL_SPEED": 4
-}
+# Rutas de recursos
+class AssetPaths:
+    # Imágenes
+    IMAGES: Dict[str, str] = {
+        "icon": "assets/images/icon.png",
+        "cursor": "assets/images/mouse.png",
+        "player": "assets/images/player.png",
+        "menu_bg": "assets/images/menu_bg.png",
+        "level1_bg": "assets/images/lvl1.jpg"
+    }
 
-# Configuración de audio
-AUDIO_CONFIG = {
-    "MUSIC_VOLUME": 0.2,
-    "SFX_VOLUME": 1.0
-}
+    # Sonidos
+    SOUNDS: Dict[str, str] = {
+        "menu_music": "assets/sounds/menu_sound.mp3",
+        "menu_move": "assets/sounds/menu_move.mp3",
+        "menu_enter": "assets/sounds/menu_enter.mp3",
+        "menu_salir": "assets/sounds/menu_salir.mp3",
+        "level1_sound": "assets/sounds/lvl1_sound.mp3"
+    }
+
+    # Fuentes
+    FONTS: Dict[str, str] = {
+        "main_font": "assets/fonts/main_font.ttf"
+    }

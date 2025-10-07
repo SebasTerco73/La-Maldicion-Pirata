@@ -1,34 +1,23 @@
 import pygame
 import sys
-from src.utils.constants import MENU_CONFIG, IMAGES_PATH, FONTS_PATH
-from src.utils.resource_manager import ResourceManager
+from settings import FONTS, MENU_FONT_SIZE, IMAGES
 
+# Padre de todas las pantallas, menu, nivel, pausa, etc
 class Scene:
-    """Clase base para todas las pantallas del juego (menú, nivel, pausa, etc.)"""
-    
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen):
         self.screen = screen
-        self.resource_manager = ResourceManager.get_instance()
         self.font = self.load_font()
-        self.text_font = self.load_font(size=14)
-        
-        # Cursor personalizado
-        self.cursor_img = self.resource_manager.load_image(f"{IMAGES_PATH}/mouse.png")
-        self.cursor_img = pygame.transform.scale(self.cursor_img, (32, 32))
-        pygame.mouse.set_visible(False)
+        self.text_font = self.load_font(size=14) 
+          # --- Cursor personalizado (global para todas las escenas) ---
+        self.cursor_img = pygame.image.load(IMAGES["cursor"]).convert_alpha()
+        self.cursor_img = pygame.transform.scale(self.cursor_img, (32, 32))  # tamaño recomendado
+        pygame.mouse.set_visible(False)  # ocultar el cursor del sistema
         self.mouse_visible = True
+        # ------------------------------------------------------------
 
-    def load_font(self, size: int = MENU_CONFIG["FONT_SIZE"]) -> pygame.font.Font:
-        """Carga una fuente con el tamaño especificado.
-        
-        Args:
-            size: Tamaño de la fuente en puntos
-            
-        Returns:
-            La fuente cargada
-        """
+    def load_font(self, size=MENU_FONT_SIZE):
         try:
-            return self.resource_manager.load_font(f"{FONTS_PATH}/main_font.ttf", size)
+            return pygame.font.Font(FONTS["main_font"], size)
         except FileNotFoundError:
             try:
                 return pygame.font.SysFont("Arial", size)
