@@ -4,6 +4,7 @@ from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, WHITE, RED, FPS, SC
 #.scene porque esta dentro del mismo paquete
 from .scene import Scene
 from .lvl1 import Level1
+from .volumeSlider import Volume
 class Options(Scene):
     def __init__(self, screen):
         super().__init__(screen) 
@@ -71,7 +72,6 @@ class Options(Scene):
     
     # Eventos de teclas
     def handle_events(self):
-        pressedKey = False
         for event in pygame.event.get():
             self.handle_global_events(event) 
             if event.type == pygame.QUIT:
@@ -88,8 +88,7 @@ class Options(Scene):
                     self.move_sound.play()
                 elif event.key == pygame.K_RETURN:
                     self.select_option()
-                    pressedKey = True
-                    return pressedKey 
+                    return True
 
             # mouse hover
             elif event.type == pygame.MOUSEMOTION:
@@ -107,6 +106,7 @@ class Options(Scene):
                         if rect.collidepoint(mouse_pos):
                             self.selected_index = index
                             self.select_option()
+                            return True
 
     def select_option(self):
         match self.selected_index:
@@ -115,6 +115,8 @@ class Options(Scene):
             case 1:
                 self.move_enter.play()
             case 2:
+                volumeSlider = Volume(self.screen)
+                volumeSlider.run()
                 self.move_enter.play()
             case 3:
                 self.move_enter.play()
@@ -123,9 +125,10 @@ class Options(Scene):
     def run(self):
         running = True
         while running:
+            pressedKey = self.handle_events()
             self.draw() # Dibuja
             self.handle_events()  # manejar eventos de teclas
             pygame.display.flip() # Actualiza 
             self.clock.tick(FPS) # velocidad del bucle 60 FPS (frames por segundo).
-            if self.selected_index == 3 and self.handle_events() == True:
+            if self.selected_index == 3 and pressedKey:
                 running = False
