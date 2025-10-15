@@ -49,13 +49,15 @@ class Level1(Scene):
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.bg_x -= self.scroll_speed
             for crab in all_crabs:
-                crab.rect.x += self.scroll_speed
+                crab.rect.x -= self.scroll_speed
             # for ind in range(len(self.all_crabs)):
             #     pass    
 
 
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
             self.bg_x += self.scroll_speed
+            for crab in all_crabs:
+                crab.rect.x += self.scroll_speed
 
         # Reiniciar cuando se salga del ancho
         if self.bg_x <= -SCREEN_WIDTH:
@@ -70,6 +72,7 @@ class Level1(Scene):
         self.screen.blit(self.background, (self.bg_x + SCREEN_WIDTH, 0))
         self.screen.blit(self.background, (self.bg_x - SCREEN_WIDTH, 0))
         self.all_sprites.draw(self.screen)   
+        self.all_crabs.draw(self.screen)
         self.draw_cursor()
 
     def init_audio(self):

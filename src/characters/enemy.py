@@ -11,8 +11,8 @@ class Crab(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(bottomleft=(x, ground))
 
     # Propiedades del NPC (Non-Player Character)
-    npc_tamanio = 30
-    npc_velocidad = 2
+    npc_tamanio = 20
+    npc_velocidad = 1
 
     direcciones = [(npc_velocidad, 0), (-npc_velocidad, 0)]
     direccion_a_moverse = random.choice(direcciones)

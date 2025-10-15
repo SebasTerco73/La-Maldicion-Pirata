@@ -6,7 +6,7 @@ IMAGES = {
 }
 
 ENEMIES = {
-    "crab": "assets/images/crab.png",
+    "crab": "assets/images/crab_sin_margen_inferior.png",
 }
 
 IMAGES_MENU = {
@@ -43,4 +43,4 @@ RED = (120, 6, 6)
 MENU_FONT_SIZE = 40
 MENU_MARGIN = 20
 
-LVL1_GROUND_Y = 500
+LVL1_GROUND_Y = 520
