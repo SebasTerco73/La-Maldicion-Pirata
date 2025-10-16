@@ -3,7 +3,7 @@ import sys
 from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, WHITE, RED, FPS, SCREEN_HEIGHT, SCREEN_WIDTH,MENU_MARGIN
 #.scene porque esta dentro del mismo paquete
 from .scene import Scene
-from .lvl1 import Level1
+from .level1 import Level1
 from .volumeSlider import Volume
 class Options(Scene):
     def __init__(self, screen):
@@ -38,12 +38,6 @@ class Options(Scene):
                 SCREEN_WIDTH // 2,
                 start_y + index * (option_height + MENU_MARGIN)
             )
-
-             # --- Créditos ---
-            credits_text = "Trabajo práctico - Rodriguez, Guiñazú, Solari, Ugarte, Puche - Programación de videojuegos"
-            credits_surface = self.text_font.render(credits_text, True, RED)
-            credits_rect = credits_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 20))
-            self.screen.blit(credits_surface, credits_rect)
 
             # Dibujar cursor
             self.draw_cursor()
@@ -125,9 +119,8 @@ class Options(Scene):
     def run(self):
         running = True
         while running:
-            pressedKey = self.handle_events()
             self.draw() # Dibuja
-            self.handle_events()  # manejar eventos de teclas
+            pressedKey = self.handle_events()
             pygame.display.flip() # Actualiza 
             self.clock.tick(FPS) # velocidad del bucle 60 FPS (frames por segundo).
             if self.selected_index == 3 and pressedKey:

@@ -3,7 +3,7 @@ import pygame
 import sys
 from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, RED, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN
 from .scene import Scene
-from .lvl1 import Level1
+from .level1 import Level1
 from .options import Options
 class Menu(Scene):
     def __init__(self, screen):

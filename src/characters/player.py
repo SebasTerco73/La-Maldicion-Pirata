@@ -6,14 +6,14 @@ from .events import GameEvents, EventSystem  # Use relative import if events.py 
 
 class Player(Character):
     def __init__(self, x, y, ground):
-        super().__init__(IMAGES["player-right"], x, y, width=120, height=120, speed=350)
+        super().__init__(IMAGES["player-right"], x, y, width=90, height=90, speed=250)
         self.image_left = pygame.image.load(IMAGES["player-left"]).convert_alpha()
-        self.image_left = pygame.transform.scale(self.image_left, (120, 120))
+        self.image_left = pygame.transform.scale(self.image_left, (90, 90))
         self.image_right = pygame.image.load(IMAGES["player-right"]).convert_alpha()
-        self.image_right = pygame.transform.scale(self.image_right, (120, 120))
+        self.image_right = pygame.transform.scale(self.image_right, (90, 90))
         self.vel_y = 0
-        self.gravity = 1000
-        self.jump_strength = -500
+        self.gravity = 1500
+        self.jump_strength = -550
         self.on_ground = False
         self.ground_y = ground
         # Estado de salud

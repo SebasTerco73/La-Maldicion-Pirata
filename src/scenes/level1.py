@@ -6,7 +6,8 @@ import sys
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL1, SOUNDS_LVL1, LVL1_GROUND_Y, WHITE, FONTS
 from .scene import Scene
 from characters.player import Player
-from characters.enemy import Crab 
+from characters.crab import Crab 
+
 class Level1(Scene):
     def __init__(self, screen):
         super().__init__(screen)
