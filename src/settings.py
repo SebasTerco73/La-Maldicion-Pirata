@@ -24,7 +24,8 @@ SOUNDS_MENU = {
 }
 
 SOUNDS_LVL1 = {
-    "level1_sound": "assets/sounds/lvl1_sound.mp3",
+    "level1_sound": "assets/sounds/lvl1_sound_LLuvia.mp3",
+    "lvl1_sound_Truenos": "assets/sounds/lvl1_sound_Trueno.mp3"
 }
 
 FONTS = {

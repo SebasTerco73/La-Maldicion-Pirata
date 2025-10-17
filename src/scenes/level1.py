@@ -14,6 +14,7 @@ class Level1(Scene):
         self.clock = pygame.time.Clock()
         self.background = pygame.image.load(IMAGES_LVL1["level1_bg"]).convert()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.time_thunder = 0
         # Sistema de desplazamiento infinito del fondo
         self.bg_x1 = 0
         self.bg_x2 = SCREEN_WIDTH
@@ -87,8 +88,16 @@ class Level1(Scene):
 
         # Timer en pantalla
         time_init = (pygame.time.get_ticks() - self.time_trascurrido) / 1000
-        time_text = f"{time_init:.0f}"
-
+        time_countdown = 20 - time_init
+        if time_countdown >= 0:
+            time_text = f"{time_countdown:.0f}"
+        else:
+            time_text = "0"
+            
+        if time_countdown <= 0:
+            self.state = "gameover"
+            self.result = "lose"    
+        
         self.text_font = self.load_font(size=40)
         self.time_surface = self.text_font.render(time_text, True, WHITE)
         time_rect = self.time_surface.get_rect(center=(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 20))
@@ -123,6 +132,11 @@ class Level1(Scene):
             self.handle_events()
             self.update(dt)
             pygame.display.flip()
+            self.time_thunder = (pygame.time.get_ticks() - self.time_thunder) / 1000
+            if self.time_thunder % 4 > 0 and self.time_thunder % 4 < 0.02:
+                pygame.mixer.Sound.play(pygame.mixer.Sound(SOUNDS_LVL1["lvl1_sound_Truenos"]))
+
+
 
     def draw_end_overlay(self):
         # Fondo semitransparente
