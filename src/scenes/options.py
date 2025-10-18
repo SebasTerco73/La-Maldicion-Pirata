@@ -4,43 +4,58 @@ from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, WHITE, RED, FPS, SC
 #.scene porque esta dentro del mismo paquete
 from .scene import Scene
 from .level1 import Level1
-from .volumeSlider import Volume
+
 class Options(Scene):
     def __init__(self, screen):
         super().__init__(screen) 
         self.screen = screen
-        self.clock = pygame.time.Clock() # Velocidad de actualización (FPS).
-        self.options = ["Resolución","Idioma", "Volumen", "Volver al menú"]  # Opciones
-        self.selected_index = 0 # Opcion seleccionada
+        self.clock = pygame.time.Clock()
+        self.options = ["Resolución", "Idioma", "Volumen", "Volver al menú"]
+        self.selected_index = 0
         self.background = pygame.image.load(IMAGES_MENU["menu_bg"]).convert_alpha()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        
+        # Nivel de volumen (de 0 a 10)
+        self.volume_level = int(pygame.mixer.music.get_volume() * 10)
+        
         self.init_audio()
 
     # dibujar menu 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
-        option_height = self.font.get_height()  # altura del texto
+        option_height = self.font.get_height()
         total_height = len(self.options) * option_height + (len(self.options) - 1) * MENU_MARGIN
         start_y = (SCREEN_HEIGHT - total_height) // 2 + 200
 
-        self.option_rects = [] # Lista vacía para los rectangulos / eventos de mouse
+        self.option_rects = []
 
         for index, option in enumerate(self.options):
             color = BLUE if index == self.selected_index else RED
-            text_surface = self.font.render(option, True, color)
+            
+            display_text = option
+            # Lógica para texto dinámico de Resolución
+            if index == 0:
+                is_fullscreen = self.screen.get_flags() & pygame.FULLSCREEN
+                display_text = "Resolución: Ventana" if is_fullscreen else "Resolución: Pantalla Completa"
+            # Lógica para texto dinámico de Volumen
+            elif index == 2:
+                display_text = f"{option}: < {self.volume_level} >"
+
+            text_surface = self.font.render(display_text, True, color)
             rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + index * (option_height + MENU_MARGIN)))
-            self.option_rects.append(rect)  # guardo el rectángulo / mouse event
+            self.option_rects.append(rect)
+            
             self.draw_text_with_outline(
-                option,
+                display_text,
                 self.font,
                 color,
-                (0, 0, 0),  # contorno negro
+                (0, 0, 0),
                 SCREEN_WIDTH // 2,
                 start_y + index * (option_height + MENU_MARGIN)
             )
 
-            # Dibujar cursor
-            self.draw_cursor()
+        # Dibujar cursor
+        self.draw_cursor()
 
     # función auxiliar para texto con contorno
     def draw_text_with_outline(self, text, font, text_color, outline_color, x, y):
@@ -57,9 +72,16 @@ class Options(Scene):
         # Solo inicializa si no se hizo ya
         if not pygame.mixer.get_init():
             pygame.mixer.init()
-        pygame.mixer.music.set_volume(0.2)
-        pygame.mixer.music.load(SOUNDS_MENU["menu_music"])
-        pygame.mixer.music.play(-1)
+        
+        # NO reiniciamos el volumen aquí. Usamos el que ya está configurado.
+        # pygame.mixer.music.set_volume(0.2) <--- LÍNEA ELIMINADA
+
+        # Si la música del menú no está sonando, la cargamos y reproducimos.
+        # Esto evita recargar la música innecesariamente si volvemos desde el menú principal.
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.load(SOUNDS_MENU["menu_music"])
+            pygame.mixer.music.play(-1)
+            
         self.move_sound = pygame.mixer.Sound(SOUNDS_MENU["menu_move"])
         self.move_enter = pygame.mixer.Sound(SOUNDS_MENU["menu_enter"])
         self.move_salir = pygame.mixer.Sound(SOUNDS_MENU["menu_salir"])
@@ -83,6 +105,17 @@ class Options(Scene):
                 elif event.key == pygame.K_RETURN:
                     self.select_option()
                     return True
+                
+                # --- Lógica para ajustar el volumen ---
+                elif self.selected_index == 2: # Si "Volumen" está seleccionado
+                    if event.key == pygame.K_LEFT:
+                        self.volume_level = max(0, self.volume_level - 1)
+                        self.set_volume()
+                        self.move_sound.play()
+                    elif event.key == pygame.K_RIGHT:
+                        self.volume_level = min(10, self.volume_level + 1)
+                        self.set_volume()
+                        self.move_sound.play()
 
             # mouse hover
             elif event.type == pygame.MOUSEMOTION:
@@ -104,17 +137,31 @@ class Options(Scene):
 
     def select_option(self):
         match self.selected_index:
-            case 0:
+            case 0: # Resolución
                 self.move_enter.play()
-            case 1:
+                self.toggle_fullscreen()
+            case 1: # Idioma
                 self.move_enter.play()
-            case 2:
-                volumeSlider = Volume(self.screen)
-                volumeSlider.run()
+            case 2: # Volumen (ya no hace nada al presionar Enter)
                 self.move_enter.play()
-            case 3:
+            case 3: # Volver al menú
                 self.move_enter.play()
                 print("Volver al menu")
+
+    def toggle_fullscreen(self):
+        """Cambia entre modo ventana y pantalla completa."""
+        is_fullscreen = self.screen.get_flags() & pygame.FULLSCREEN
+        if is_fullscreen:
+            # Cambiar a modo ventana
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        else:
+            # Cambiar a pantalla completa
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+
+    def set_volume(self):
+        """Ajusta el volumen global de la música basado en self.volume_level."""
+        volume_float = self.volume_level / 10.0
+        pygame.mixer.music.set_volume(volume_float)
 
     def run(self):
         running = True

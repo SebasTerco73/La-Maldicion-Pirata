@@ -26,6 +26,7 @@ class Player(Character):
         self.invulnerable_duration = 1.0
         # Sistema de eventos (opcional). Si no se pasa uno externo, creamos uno local
         self.event_system = EventSystem()
+        
        
     def handle_input(self, dt):
         keys = pygame.key.get_pressed()
