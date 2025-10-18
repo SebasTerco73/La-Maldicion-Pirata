@@ -22,7 +22,8 @@ class Level1(Scene):
         
         self.init_audio()
         self.reset_level() # Usar reset_level para la configuración inicial
-        self.player_last_y = 0 # Añadir esta línea
+        self.player_last_y = 0
+        self.pause_start_time = 0 # Para registrar cuándo se inicia la pausa
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -31,16 +32,40 @@ class Level1(Scene):
                 pygame.quit()
                 sys.exit()
             
-            if self.state != "playing" and event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    self.reset_level()
-                elif event.key in (pygame.K_ESCAPE, pygame.K_m):
-                    pygame.mixer.music.stop()
-                    if hasattr(self, "sfx_thunder"):
+            if event.type == pygame.KEYDOWN:
+                # Lógica de Pausa (con la tecla P)
+                if event.key == pygame.K_p:
+                    if self.state == "playing":
+                        self.state = "paused"
+                        self.pause_start_time = pygame.time.get_ticks() # Guardar tiempo de inicio de pausa
+                        pygame.mixer.music.pause()
                         self.sfx_thunder.stop()
+                    elif self.state == "paused":
+                        # Calcular duración de la pausa y ajustarla al tiempo total transcurrido
+                        pause_duration = pygame.time.get_ticks() - self.pause_start_time
+                        self.time_trascurrido += pause_duration
+                        
+                        self.state = "playing"
+                        pygame.mixer.music.unpause()
+                        self.sfx_thunder.play(loops=-1)
+
+                # Lógica de fin de juego y menú
+                if self.state == "gameover":
+                    if event.key == pygame.K_r:
+                        self.reset_level()
+                    elif event.key in (pygame.K_ESCAPE, pygame.K_m):
+                        pygame.mixer.music.stop()
+                        if hasattr(self, "sfx_thunder"):
+                            self.sfx_thunder.stop()
+                        self.running = False
+                # Salir al menú desde la pausa
+                elif self.state == "paused" and event.key in (pygame.K_ESCAPE, pygame.K_m):
+                    pygame.mixer.music.stop()
                     self.running = False
 
+
     def update(self, dt):
+        # Si el juego está en pausa o terminado, no se actualiza la lógica
         if self.state != "playing":
             return
 
@@ -67,7 +92,7 @@ class Level1(Scene):
             offset = (crab.rect.x - self.player.rect.x, crab.rect.y - self.player.rect.y)
 
             if player_mask.overlap(crab_mask, offset):
-                # Condición de pisotón mejorada:
+                # Condición de pisotón:
                 # 1. El jugador está cayendo (su posición 'y' actual es mayor que la anterior).
                 # 2. La parte inferior del jugador está muy cerca de la parte superior del cangrejo.
                 is_stomp = player_is_falling and abs(self.player.rect.bottom - crab.rect.top) < 15 # Aumentamos un poco el umbral
@@ -112,8 +137,10 @@ class Level1(Scene):
         
         self.draw_cursor()
         
-        if self.state != "playing":
+        if self.state == "gameover":
             self.draw_end_overlay()
+        elif self.state == "paused":
+            self.draw_pause_overlay()
 
     def init_audio(self):
         if not pygame.mixer.get_init():
@@ -156,13 +183,33 @@ class Level1(Scene):
             rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
             self.screen.blit(surf, rect)
 
+    def draw_pause_overlay(self):
+        """Dibuja la pantalla de pausa."""
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 170))
+        self.screen.blit(overlay, (0, 0))
+
+        title_font = self.load_font(size=72)
+        info_font = self.load_font(size=28)
+
+        title_surf = title_font.render("PAUSA", True, WHITE)
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
+        self.screen.blit(title_surf, title_rect)
+
+        lines = ["P - Continuar", "M o ESC - Volver al menú"]
+        for i, text in enumerate(lines):
+            surf = info_font.render(text, True, WHITE)
+            rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
+            self.screen.blit(surf, rect)
+
     def reset_level(self):
         # Estado de juego
         self.state = "playing"
         self.result = None
         self.time_trascurrido = pygame.time.get_ticks()
         self.time_text = "20"
-        self.player_last_y = 0 # Añadir esta línea
+        self.player_last_y = 0
+        self.pause_start_time = 0 # Resetear el tiempo de pausa
 
         # Grupos de sprites
         self.all_sprites = pygame.sprite.Group()
