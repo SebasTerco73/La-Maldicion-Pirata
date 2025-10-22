@@ -2,7 +2,7 @@
 import pygame
 import sys
 from scenes.menu import Menu
-from settings import SCREEN_HEIGHT, SCREEN_WIDTH, IMAGES, FPS
+from settings import SCREEN_HEIGHT, SCREEN_WIDTH, IMAGES
 
 def main():
     pygame.init()
