@@ -1,9 +1,9 @@
 # menu.py
 import pygame
 import sys
-from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, RED, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN
+from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, RED, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN,LANGUAGE
 from .scene import Scene
-from .lvl1 import Level1
+from .level1 import Level1
 from .options import Options
 class Menu(Scene):
     def __init__(self, screen):
@@ -14,6 +14,7 @@ class Menu(Scene):
         self.background = pygame.image.load(IMAGES_MENU["menu_bg"]).convert_alpha()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
         self.init_audio()
+        lang = LANGUAGE
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -86,8 +87,8 @@ class Menu(Scene):
                             self.select_option()
 
     def select_option(self):
-        match self.selected_index:
-            case 0:
+        
+        if self.selected_index == 0:
                 self.move_enter.play()
                 pygame.time.delay(200)
                 pygame.mixer.music.stop()
@@ -95,11 +96,11 @@ class Menu(Scene):
                 level1.run()
                 # Al regresar del nivel, reiniciar música del menú
                 self.init_audio()
-            case 1:
+        if self.selected_index == 1:
                 self.move_enter.play()
                 options = Options(self.screen)
                 options.run()
-            case 2:
+        if self.selected_index == 2:
                 self.move_salir.play()
                 while pygame.mixer.get_busy():
                     pygame.time.delay(50)
