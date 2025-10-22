@@ -26,7 +26,7 @@ class Scene:
 
     def handle_global_events(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_F11:
+            if event.key == pygame.K_F12:
                 pygame.display.toggle_fullscreen()
             elif event.key == pygame.K_RETURN and (pygame.key.get_mods() & pygame.KMOD_ALT):
                 pygame.display.toggle_fullscreen()
