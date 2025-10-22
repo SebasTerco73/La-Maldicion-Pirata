@@ -277,7 +277,7 @@ class Level2(Scene):
         self.all_sprites.add(self.player)
         for _ in range(20):
             #randomPos = random.randint(0, SCREEN_WIDTH - 100)
-            randomPos = random.randint(0, SCREEN_WIDTH)
+            randomPos = random.randint(0, SCREEN_WIDTH*3)
             crab = Crab(randomPos, LVL1_GROUND_Y)
             self.all_crabs.add(crab)
 

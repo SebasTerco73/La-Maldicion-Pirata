@@ -64,6 +64,7 @@ class Level1(Scene):
                         self.sfx_thunder.play(loops=-1)
 
                 # Lógica de fin de juego y menú
+                print(self.result)
                 if self.state == "gameover" and self.result == "lose":
                     if event.key == pygame.K_r:
                         self.reset_level()
@@ -72,7 +73,7 @@ class Level1(Scene):
                         if hasattr(self, "sfx_thunder"):
                             self.sfx_thunder.stop()
                         self.running = False
-                if self.state == "gameover" and self.result == "win":
+                elif self.state == "gameover" and self.result == "win":
                     self.running = False
                 # Salir al menú desde la pausa
                 elif self.state == "paused" and event.key in (pygame.K_ESCAPE, pygame.K_m):
@@ -320,5 +321,6 @@ class Level1(Scene):
                 self.draw()
                 self.update(dt)
                 pygame.display.flip()
-            level2 = Level2(self.screen)
-            level2.run()
+            if self.result == "win":
+                level2 = Level2(self.screen)
+                level2.run()
