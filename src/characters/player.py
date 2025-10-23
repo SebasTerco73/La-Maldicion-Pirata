@@ -17,6 +17,12 @@ class Player(Character):
         self.image_left = pygame.transform.scale(self.image_left, (90, 90))
         self.image_right = pygame.image.load(IMAGES["player-right"]).convert_alpha()
         self.image_right = pygame.transform.scale(self.image_right, (90, 90))
+        self.facing_right = True  # 🔹 inicializamos la dirección al principio
+
+        spritesheet = pygame.image.load(IMAGES["player-walk"]).convert_alpha()
+        self.frames = self.extraer_frames(spritesheet, cols=7, rows=1, scale=(100,100))
+        self.frame_actual = 0
+    
         self.vel_y = 0
         self.gravity = 1500
         self.jump_strength = -550
@@ -34,24 +40,41 @@ class Player(Character):
         # Sistema de eventos (opcional). Si no se pasa uno externo, creamos uno local
         self.event_system = EventSystem()
         
-       
+    def extraer_frames(self, sheet, cols, rows, scale=None):
+        frames = []
+        w, h = sheet.get_size()
+        frame_w, frame_h = w // cols, h // rows
+        for y in range(rows):
+            for x in range(cols):
+                rect = pygame.Rect(x * frame_w, y * frame_h, frame_w, frame_h)
+                frame = sheet.subsurface(rect).copy()
+                if scale:
+                    frame = pygame.transform.smoothscale(frame, scale)
+                frames.append(frame)
+        return frames
+    
+    def draw(self, pantalla):
+        pantalla.blit(self.frames[int(self.frame_actual)], (self.rect.x, self.rect.y))
+
     def handle_input(self, dt):
         keys = pygame.key.get_pressed()
-        dx = 0
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            dx = -1
-            if self.image != self.image_left:
-                self.image = self.image_left 
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            dx = 1
-            if self.image != self.image_right:
-                self.image = self.image_right
+        self.dx = 0  # Guardamos movimiento horizontal
 
-        self.move(dx, dt)
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            self.dx = -1
+            self.facing_right = False
+        elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.dx = 1
+            self.facing_right = True
+
+        # Mover solo si hay dx
+        self.move(self.dx, dt)
+
         if (keys[pygame.K_w] or keys[pygame.K_UP]) and self.on_ground:
             self.vel_y = self.jump_strength
             self.on_ground = False
-    
+
+
     def apply_gravity(self, dt):
         self.vel_y += self.gravity * dt
         self.rect.y += self.vel_y * dt
@@ -68,7 +91,24 @@ class Player(Character):
         self.handle_input(dt)
         self.clamp_to_world()
         self.apply_gravity(dt)
-     
+
+         # Solo animar si hay movimiento horizontal
+        anim_fps = 12  # 12 frames por segundo, ajustable
+        if getattr(self, 'dx', 0) != 0:
+            self.frame_actual += anim_fps*dt
+            if self.frame_actual >= len(self.frames):
+                self.frame_actual = 0
+        else:
+            self.frame_actual = 0  # opcional: poner frame idle
+
+        # Seleccionar frame
+        frame = self.frames[int(self.frame_actual)]
+
+    # Flip según dirección
+        if not getattr(self, 'facing_right', True):
+            frame = pygame.transform.flip(frame, True, False)
+
+        self.image = frame
 
         # Actualizar timers
         if self.invulnerable_timer > 0.0:
@@ -79,14 +119,10 @@ class Player(Character):
 
     def clamp_to_world(self):
         """Evita que el jugador salga de los límites del mundo (no solo de la pantalla)."""
-        if self.rect.left < 0:
-            self.rect.left = 0
+        if self.rect.left < 120:
+            self.rect.left = 120
         if self.rect.right > self.world_width:
             self.rect.right = self.world_width
-
-
-            
-     
 
     @property
     def is_falling(self):
