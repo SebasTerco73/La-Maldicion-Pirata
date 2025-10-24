@@ -101,7 +101,7 @@ class Level1(Scene):
         self.player_last_y = self.player.rect.y
 
         # Activar invulnerabilidad mientras cae
-        self.player.invulnerable_from_hit = player_is_falling
+        # self.player.invulnerable_from_hit = player_is_falling
 
         # Creamos la máscara del jugador para detección precisa
         player_mask = pygame.mask.from_surface(self.player.image)
