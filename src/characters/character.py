@@ -7,6 +7,11 @@ class Character(pygame.sprite.Sprite):
         self.image = pygame.image.load(image_path).convert_alpha()
         self.image = pygame.transform.scale(self.image, (width, height))
         self.rect = self.image.get_rect(topleft=(x, y))
+        # Máscara para colisiones pixel-perfect
+        try:
+            self.mask = pygame.mask.from_surface(self.image)
+        except Exception:
+            self.mask = None
         self.speed = speed
 
     def move(self, dx, dt=1):

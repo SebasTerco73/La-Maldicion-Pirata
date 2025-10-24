@@ -99,32 +99,16 @@ class Level1(Scene):
         # Actualizar sprites
         self.all_sprites.update(dt)
         self.all_crabs.update(dt, self.player)
+        # Loguear cambios en la cantidad de cangrejos para depuración
+        try:
+            current_count = len(self.all_crabs)
+            self.previous_crab_count = current_count
+        except Exception:
+            pass
        
-        # Detección de colisiones
-        player_is_falling = self.player.rect.y > self.player_last_y
+        # Las colisiones con enemigos se manejan dentro de cada enemigo (pixel-perfect en Crab)
+        # Actualizamos solo el flag de caída para usos potenciales adicionales
         self.player_last_y = self.player.rect.y
-
-        player_mask = pygame.mask.from_surface(self.player.image)
-        for crab in list(self.all_crabs):
-            if not self.player.rect.colliderect(crab.rect):
-                continue
-
-            crab_mask = pygame.mask.from_surface(crab.image)
-            offset = (crab.rect.x - self.player.rect.x, crab.rect.y - self.player.rect.y)
-
-            if player_mask.overlap(crab_mask, offset):
-                # Condición de pisotón:
-                # 1. El jugador está cayendo (su posición 'y' actual es mayor que la anterior).
-                # 2. La parte inferior del jugador está muy cerca de la parte superior del cangrejo.
-                is_stomp = player_is_falling and abs(self.player.rect.bottom - crab.rect.top) < 15 # Aumentamos un poco el umbral
-
-                if is_stomp:
-                    crab.kill()
-                    if hasattr(self.player, 'jump'):
-                        self.player.jump(strength=-8) 
-                else:
-                    if hasattr(self.player, 'take_damage'):
-                        self.player.take_damage(10)
 
         # Actualizar temporizador
         time_countdown = 30 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
@@ -175,6 +159,17 @@ class Level1(Scene):
 
         # UI (HUD)
         self.draw_health_bar()
+        # Puntaje: crangrejos eliminados
+        try:
+            # Calcular puntaje como diferencia entre inicial y actuales
+            current_crabs = len(self.all_crabs) if hasattr(self, 'all_crabs') else 0
+            score = max(0, getattr(self, 'initial_crabs', 0) - current_crabs)
+            score_font = self.load_font(size=26)
+            score_surf = score_font.render(f"Score: {score}", True, WHITE)
+            score_rect = score_surf.get_rect(topleft=(20, 52))
+            self.screen.blit(score_surf, score_rect)
+        except Exception:
+            pass
         
         # Dibujar timer (usando el texto calculado en update)
         text_font = self.load_font(size=40)
@@ -269,12 +264,17 @@ class Level1(Scene):
         self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y, world_width=self.level_width)
 
         self.all_sprites.add(self.player)
-        for _ in range(30):
+        for _ in range(10):
             #randomPos = random.randint(0, SCREEN_WIDTH - 100)
             # randomPos = random.randint(200, SCREEN_WIDTH*3)
             randomPos = random.randint(200, self.level_width)
             crab = Crab(randomPos, LVL1_GROUND_Y)
             self.all_crabs.add(crab)
+
+        # Contador de cangrejos (para mostrar cuántos ha matado el jugador)
+        self.initial_crabs = len(self.all_crabs)
+        # Para depuración: seguimiento del conteo previo
+        self.previous_crab_count = self.initial_crabs
 
         # Resetear fondo
         self.bg_x1 = 0

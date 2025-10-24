@@ -1,6 +1,6 @@
 import pygame
 import random
-from settings import IMAGES_LVL1 as ENEMIES, SCREEN_WIDTH
+from settings import IMAGES_LVL1 as ENEMIES, SCREEN_WIDTH, DEBUG_COLLISIONS
 from .character import Character
 
 
@@ -66,39 +66,60 @@ class Crab(Character):
         """
         if player is None:
             return False
+        # Usar máscaras precomputadas (más rápido) cuando estén disponibles
+        player_mask = getattr(player, 'mask', None)
+        crab_mask = getattr(self, 'mask', None)
+        overlap = None
+        if player_mask is not None and crab_mask is not None:
+            try:
+                offset = (self.rect.x - player.rect.x, self.rect.y - player.rect.y)
+                overlap = player_mask.overlap(crab_mask, offset)
+            except Exception:
+                overlap = None
 
-        if self.rect.colliderect(player.rect):
-            # Calcular la posición relativa del jugador respecto al cangrejo
-            collision_threshold = 10  # Píxeles de margen para considerar que viene desde arriba
-            player_bottom = player.rect.bottom
-            enemy_top = self.rect.top
+        if not overlap:
+            # Como respaldo, revisar rects
+            if not self.rect.colliderect(player.rect):
+                return False
 
-            # Determinar si el jugador está cayendo
-            is_falling = getattr(player, 'is_falling', None)
-            if is_falling is None:
-                is_falling = (hasattr(player, 'vel_y') and player.vel_y > 0 and not getattr(player, 'on_ground', False))
+    # Si hay overlap (o colisión por rect como respaldo), decidir si es stomp
+        # Determinar si el jugador está cayendo (falling) usando vel_y o is_falling
+        is_falling = getattr(player, 'is_falling', None)
+        if is_falling is None:
+            is_falling = (hasattr(player, 'vel_y') and getattr(player, 'vel_y', 0) > 50 and not getattr(player, 'on_ground', False))
 
-            if is_falling and player_bottom < enemy_top + collision_threshold:
-                # El jugador elimina al cangrejo
-                self.kill()  # Elimina el sprite de todos los grupos
-                # Dar un pequeño rebote al jugador
-                if hasattr(player, 'jump_strength'):
-                    player.vel_y = player.jump_strength * 0.5  # La mitad de la fuerza de salto normal
-                player.on_ground = False
-                return True
-            else:
-                # Si no es un golpe desde arriba y no está en tiempo de invulnerabilidad
-                if self.attack_timer <= 0.0:
-                    # Intentar llamar a take_damage si existe
-                    if hasattr(player, 'take_damage'):
-                        player.take_damage(self.damage)
-                    else:
-                        if hasattr(player, 'health'):
-                            player.health -= self.damage
-                    self.attack_timer = self.attack_cooldown
-                return True
+        # Umbral en píxeles para considerar un stomp preciso
+        stomp_threshold = 18
+        player_bottom = player.rect.bottom
+        enemy_top = self.rect.top
 
-        return False
+        if is_falling and (player_bottom - enemy_top) < stomp_threshold:
+            # Stomp: el jugador elimina al cangrejo
+            self.kill()
+            # Rebotar el jugador hacia arriba
+            if hasattr(player, 'jump_strength') and hasattr(player, 'vel_y'):
+                # Asignar una velocidad hacia arriba (negativa) proporcional a jump_strength
+                player.vel_y = -abs(getattr(player, 'jump_strength', 8)) * 0.6
+            elif hasattr(player, 'jump'):
+                # Llamada antigua si existe
+                try:
+                    player.jump(strength=-8)
+                except TypeError:
+                    player.jump(-8)
+            player.on_ground = False
+            return True
+        else:
+            # Contacto lateral o desde abajo: dañar al jugador con cooldown
+            if self.attack_timer <= 0.0:
+                if DEBUG_COLLISIONS:
+                    print(f"[COLLISION DEBUG] CONTACT (no stomp). Applying damage {self.damage} to player.")
+                if hasattr(player, 'take_damage'):
+                    player.take_damage(self.damage)
+                else:
+                    if hasattr(player, 'health'):
+                        player.health -= self.damage
+                self.attack_timer = self.attack_cooldown
+            return True
 
     def update(self, dt, player=None):
         # update acepta dt y opcionalmente el jugador (para chequear colisiones)

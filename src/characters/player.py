@@ -42,10 +42,18 @@ class Player(Character):
             dx = -1
             if self.image != self.image_left:
                 self.image = self.image_left 
+                try:
+                    self.mask = pygame.mask.from_surface(self.image)
+                except Exception:
+                    self.mask = None
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             dx = 1
             if self.image != self.image_right:
                 self.image = self.image_right
+                try:
+                    self.mask = pygame.mask.from_surface(self.image)
+                except Exception:
+                    self.mask = None
 
         self.move(dx, dt)
         if (keys[pygame.K_w] or keys[pygame.K_UP]) and self.on_ground:
