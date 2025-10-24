@@ -1,6 +1,6 @@
 # player.py
 import pygame
-from settings import IMAGES, SCREEN_WIDTH
+from settings import IMAGES, SCREEN_WIDTH, SOUNDS_PLAYER
 from .character import Character
 from .events import GameEvents, EventSystem  # Use relative import if events.py is in the same directory
 
@@ -16,7 +16,7 @@ class Player(pygame.sprite.Sprite):
         self.frames_left = [pygame.transform.flip(frame, True, False) for frame in self.frames]
         self.frames_jump_left = [pygame.transform.flip(frame, True, False) for frame in self.frames_jump]
 
-
+        self.sound_jump = pygame.mixer.Sound(SOUNDS_PLAYER["player_sound_jump"])
 
         self.frame_actual = 0.0  # índice del frame
         # No se usa pantalla.blit(...) porque Level1.draw() ya hace self.screen.blit(sprite.image, ...) para todos los sprites.
@@ -57,9 +57,7 @@ class Player(pygame.sprite.Sprite):
                 if scale:
                     frame = pygame.transform.smoothscale(frame, scale)
                 frames.append(frame)
-
         return frames
-
         
     def handle_input(self, dt):
         keys = pygame.key.get_pressed()
@@ -102,6 +100,7 @@ class Player(pygame.sprite.Sprite):
 
         # --- Salto ---
         if (keys[pygame.K_w] or keys[pygame.K_UP]) and self.on_ground:
+            self.sound_jump.play()
             self.vel_y = self.jump_strength
             self.on_ground = False
         

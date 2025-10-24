@@ -6,7 +6,6 @@ IMAGES = {
     "player-left": "assets/images/pirate-left.png",
     "player-walk": "assets/images/player-walk.png",
     "player-jump": "assets/images/player-jump.png",
-
 }
 
 IMAGES_MENU = {
@@ -34,6 +33,10 @@ SOUNDS_MENU = {
     "menu_move": "assets/sounds/menu_move.mp3",
     "menu_enter":"assets/sounds/menu_enter.mp3",
     "menu_salir":"assets/sounds/menu_salir.mp3",
+}
+
+SOUNDS_PLAYER = {
+    "player_sound_jump": "assets/sounds/jump_sound.mp3",
 }
 
 SOUNDS_LVL1 = {
