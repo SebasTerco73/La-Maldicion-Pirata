@@ -1,6 +1,6 @@
 import pygame
 import random
-from settings import IMAGES_LVL1 as ENEMIES
+from settings import IMAGES_LVL1 as ENEMIES, SCREEN_WIDTH
 from .character import Character
 
 
@@ -10,6 +10,7 @@ class Crab(Character):
         y = ground - 50
         super().__init__(ENEMIES["enemy_crab"], x, y, width=50, height=50, speed=120)
         # Física básica
+        self.world_widht = SCREEN_WIDTH * 3
         self.vel_y = 0.0
         self.gravity = 300.0
         self.on_ground = True
@@ -31,6 +32,15 @@ class Crab(Character):
             self.vel_y = 0.0
             self.on_ground = True
 
+    def clamp_to_world(self):
+        """Evita que el jugador salga de los límites del mundo (no solo de la pantalla)."""
+        if self.rect.left < 120:
+            self.rect.left = 120
+            self.direction *= -1  # Invertir dirección
+             
+        if self.rect.right > self.world_widht:
+            self.rect.right = self.world_widht
+
     def move_pattern(self, dt):
         """
         Implementa el patrón de movimiento del cangrejo
@@ -48,7 +58,7 @@ class Crab(Character):
         self.rect.x += int(self.speed * self.direction * dt)
 
         # Mantener al cangrejo dentro de la pantalla
-        self.clamp_to_screen()
+        # self.clamp_to_screen()
 
     def check_collision_with_player(self, player) -> bool:
         """
@@ -96,6 +106,7 @@ class Crab(Character):
 
         # Mover el cangrejo
         self.move_pattern(dt)
+        self.clamp_to_world()
 
         # Actualizar temporizador de ataque
         if self.attack_timer > 0.0:

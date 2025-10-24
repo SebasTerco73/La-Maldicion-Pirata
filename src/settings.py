@@ -4,6 +4,9 @@ IMAGES = {
     "cursor": "assets/images/mouse.png",
     "player-right": "assets/images/pirate-right.png",
     "player-left": "assets/images/pirate-left.png",
+    "player-walk": "assets/images/player-walk.png",
+    "player-jump": "assets/images/player-jump.png",
+
 }
 
 IMAGES_MENU = {
@@ -13,13 +16,18 @@ IMAGES_MENU = {
 }
 
 IMAGES_LVL1 = {
-    #"level1_bg": "assets/images/lvl1.jpg",
     "enemy_crab": "assets/images/cangrejo.png",
     "bg_far": "assets/images/bg_far.PNG",
     "bg_middle": "assets/images/bg_middle.PNG",
     "bg_near": "assets/images/bg_near.PNG",
 }
 
+IMAGES_LVL2= {
+    "bg_far": "assets/images/lvl2_bg.png",
+    "bg_middle": "assets/images/lvl2_bg2.png",
+    "bg_near": "assets/images/lvl2_bg2.png",
+    "enemy_ghost": "assets/images/ghost.png",
+}
 # --- Sonidos ---
 SOUNDS_MENU = {
     "menu_music": "assets/sounds/menu_sound.mp3",

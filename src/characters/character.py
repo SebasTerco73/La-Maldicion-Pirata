@@ -12,18 +12,7 @@ class Character(pygame.sprite.Sprite):
     def move(self, dx, dt=1):
         self.rect.x += dx * self.speed * dt
 
-    def clamp_to_screen(self):
-        screen = pygame.display.get_surface()
-       
-        if screen:
-       
- 
-
-            screen_width, screen_height = screen.get_size()
-           
-            
-            self.rect.x = max(-50, min(self.rect.x, screen_width - self.rect.width + 20))
-            self.rect.y = max(0, min(self.rect.y, screen_height - self.rect.height + 10))
+    
             
             
             
