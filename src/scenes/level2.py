@@ -161,8 +161,10 @@ class Level2(Scene):
             self.result = "lose"
         elif not self.all_ghosts or keys[pygame.K_q]: 
             self.all_ghosts.empty()
-
-   
+        
+        if self.state == "playing" and not self.group_boss:
+            self.result = "win"
+            self.running = False
 
     def respawn_ghosts(self):
         self.all_ghosts.empty()
@@ -296,8 +298,6 @@ class Level2(Scene):
         self.group_boss.add(self.boss)
 
         for _ in range(30):
-            #randomPos = random.randint(0, SCREEN_WIDTH - 100)
-            # randomPos = random.randint(200, SCREEN_WIDTH*3)
             randomPos = random.randint(600, self.level_width)
             ghost = Ghost(randomPos, LVL2_GROUND_Y)
             self.all_ghosts.add(ghost)
@@ -305,7 +305,8 @@ class Level2(Scene):
         # Resetear fondo
         self.bg_x1 = 0
         self.bg_x2 = SCREEN_WIDTH
-        self.state = "playing"
+        if self.group_boss:
+            self.state = "playing"
 
     def draw_health_bar(self):
         if not hasattr(self, 'player') or self.player is None: return
@@ -342,14 +343,13 @@ class Level2(Scene):
     def run(self):
             self.running = True
             while self.running:
-                print(self.group_boss, list(self.group_boss))
                 dt = self.clock.tick(FPS) / 1000
                 self.handle_events()
                 self.draw()
                 self.update(dt)
                 pygame.display.flip()
 
-            # gameover = GameOver(self.screen)
-            # gameover.run()
+            gameover = GameOver(self.screen)
+            gameover.run()
             
     

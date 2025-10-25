@@ -303,5 +303,6 @@ class Level1(Scene):
                 self.update(dt)
                 pygame.display.flip()
             if self.result == "win":
+                pygame.mixer.music.stop()
                 level2 = Level2(self.screen)
                 level2.run()

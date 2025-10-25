@@ -18,7 +18,7 @@ class Boss(Character):
         self.damage = 20
         self.attack_cooldown = 1.0  # Segundos entre ataques
         self.attack_timer = 0.0
-        self.health = 100
+        self.health = 100 # Aca va 100
 
     def regenerate_ghosts(self):
         for _ in range(20):

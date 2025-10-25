@@ -10,9 +10,15 @@ class GameOver(Scene):
         self.screen = screen
         self.background = pygame.image.load(IMAGES_MENU["fin1"]).convert_alpha()
         self.background = pygame.transform.scale(self.background, (400, 400))
+        self.running = True
         self.init_audio()
         lang = LANGUAGE
         self.credits_text = "Trabajo práctico - Rodriguez, Guiñazú, Solari, Ugarte, Puche - Programación de videojuegos"
+    
+    def volver_al_menu(self):
+            from .menu import Menu  # import local, no global
+            menu = Menu(self.screen)
+            menu.run()
 
     def draw(self):
         self.screen.fill((0, 0, 0))
@@ -56,11 +62,17 @@ class GameOver(Scene):
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     pygame.mixer.music.stop()
-                    pygame.quit()
-                    sys.exit()
+                    self.running = False
+
+        
 
     def run(self):
-            self.handle_events()    
-            self.draw()             
-            pygame.display.flip()   
+            while self.running:
+                self.handle_events()    
+                self.draw()             
+                pygame.display.flip()  
+
+            self.volver_al_menu() 
+            
+
  

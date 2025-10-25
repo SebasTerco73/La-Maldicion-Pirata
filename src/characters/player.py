@@ -27,8 +27,7 @@ class Player(pygame.sprite.Sprite):
         self.facing = 1
         self.vel_y = 0
         self.restriction = restriction_x
-        # self.speed = 200
-        self.speed =400
+        self.speed = 200
         self.gravity = 1500
         # self.jump_strength = -550
         self.jump_strength = -800
