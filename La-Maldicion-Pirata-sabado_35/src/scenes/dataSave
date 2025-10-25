@@ -1,0 +1,21 @@
+import os
+import json
+settingsPath = "settings.json"
+filePath = os.path.join("assets", settingsPath)
+os.makedirs("assets", exist_ok=True)
+def setFileUp():
+    settings = {
+        "volume": 0,
+        "width" : 800,
+        "height" : 600,
+        "language": "es"
+    }
+    with open(filePath, "w") as f:
+        json.dump(settings, f)
+def saveSettings(settingName, value):
+    settings = settingName = {settingName: value}
+    with open(filePath, "a") as f:
+        json.dump(settings, f)
+def loadSettings(settingName):
+    with open(filePath, "r") as f:
+        settingName = 
