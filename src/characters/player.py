@@ -9,6 +9,8 @@ class Player(pygame.sprite.Sprite):
         spritesheet = pygame.image.load(IMAGES["player-walk"]).convert_alpha()
         spritesheet_jump = pygame.image.load(IMAGES["player-jump"]).convert_alpha()      
 
+        self.sound_damage = pygame.mixer.Sound(SOUNDS_PLAYER["player_sound_damage"])
+
         self.frames = self.extraer_frames(spritesheet, cols=8, rows=1, scale=(100,100))
         self.frames_jump = self.extraer_frames(spritesheet_jump, cols=7, rows=1, scale=(100,100))
         
@@ -140,6 +142,8 @@ class Player(pygame.sprite.Sprite):
         # Actualizar timers
         self.invulnerabilityHandle(dt)
 
+    def setJump(self,jump):
+        self.jump_strength= -jump
 
     def invulnerabilityHandle(self,dt):
         if self.invulnerable_timer_jump > 0.0:
@@ -184,6 +188,7 @@ class Player(pygame.sprite.Sprite):
 
         # Restar vida
         self.health = max(0, self.health - amount)
+        self.sound_damage.play()
         # Activar invulnerabilidad temporal
          
         # Knockback (si se indica)

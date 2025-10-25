@@ -26,6 +26,7 @@ IMAGES_LVL2= {
     "bg_middle": "assets/images/lvl2_bg2.png",
     "bg_near": "assets/images/lvl2_bg2.png",
     "enemy_ghost": "assets/images/ghost.png",
+    "enemy_boss":"assets/images/boss.png",
 }
 # --- Sonidos ---
 SOUNDS_MENU = {
@@ -37,6 +38,7 @@ SOUNDS_MENU = {
 
 SOUNDS_PLAYER = {
     "player_sound_jump": "assets/sounds/jump_sound.mp3",
+    "player_sound_damage": "assets/sounds/player_damage.mp3",
 }
 
 SOUNDS_LVL1 = {
@@ -60,3 +62,4 @@ MENU_FONT_SIZE = 40
 MENU_MARGIN = 20
 LANGUAGE = "es" 
 LVL1_GROUND_Y = 500
+LVL2_GROUND_Y = 500

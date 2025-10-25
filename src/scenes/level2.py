@@ -2,10 +2,11 @@
 import random
 import pygame
 import sys
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL1_GROUND_Y, WHITE
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL2_GROUND_Y, WHITE
 from .scene import Scene
 from characters.player import Player
 from characters.ghost import Ghost 
+from characters.boss import Boss
 
 class Level2(Scene):
     def __init__(self, screen):
@@ -91,6 +92,7 @@ class Level2(Scene):
         # Actualizar sprites
         self.all_sprites.update(dt)
         self.all_ghosts.update(dt, self.player)
+        self.group_boss.update(dt, self.player)
        
         # -----------------------------
         # Colisiones jugador - cangrejos
@@ -120,7 +122,6 @@ class Level2(Scene):
                 if is_stomp:
                     ghost.kill()
                     if not stomped_this_frame and hasattr(self.player, 'jump'):
-                        self.player.jump(strength=-8)
                         stomped_this_frame = True
 
                 else:
@@ -129,7 +130,7 @@ class Level2(Scene):
                         self.player.take_damage(10, knockback_strength=20,source_x=ghost.rect.centerx)
 
         # Quitar invulnerabilidad al tocar el suelo
-        if self.player.rect.bottom >= LVL1_GROUND_Y:
+        if self.player.rect.bottom >= LVL2_GROUND_Y:
             self.player.invulnerable_from_jump = False
         
 
@@ -160,6 +161,8 @@ class Level2(Scene):
             self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
         for crab in self.all_ghosts:
             self.screen.blit(crab.image, (crab.rect.x - self.camera_x, crab.rect.y))
+        for sprite in self.group_boss:
+            self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
 
         # UI (HUD)
         self.draw_health_bar()
@@ -246,17 +249,19 @@ class Level2(Scene):
         # Grupos de sprites
         self.all_sprites = pygame.sprite.Group()
         self.all_ghosts = pygame.sprite.Group()
+        self.group_boss = pygame.sprite.Group()
 
         # Crear jugador y enemigos
-       # self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
-        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y, world_width=self.level_width, restriction_x=120)
-
+        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL2_GROUND_Y, world_width=self.level_width, restriction_x=120)
         self.all_sprites.add(self.player)
+        self.boss = Boss(LVL2_GROUND_Y)
+        self.group_boss.add(self.boss)
+
         for _ in range(30):
             #randomPos = random.randint(0, SCREEN_WIDTH - 100)
             # randomPos = random.randint(200, SCREEN_WIDTH*3)
             randomPos = random.randint(600, self.level_width)
-            ghost = Ghost(randomPos, LVL1_GROUND_Y)
+            ghost = Ghost(randomPos, LVL2_GROUND_Y)
             self.all_ghosts.add(ghost)
 
         # Resetear fondo

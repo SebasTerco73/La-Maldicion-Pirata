@@ -121,7 +121,6 @@ class Level1(Scene):
                 if is_stomp:
                     crab.kill()
                     if not stomped_this_frame and hasattr(self.player, 'jump'):
-                        self.player.jump(strength=-8)
                         stomped_this_frame = True
                 else:
                     # Si el jugador no lo pisa, recibe daño
