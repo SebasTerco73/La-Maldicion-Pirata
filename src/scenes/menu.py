@@ -102,8 +102,8 @@ class Menu(Scene):
                 options.run()
         if self.selected_index == 2:
                 self.move_salir.play()
-                while pygame.mixer.get_busy():
-                    pygame.time.delay(50)
+                pygame.mixer.music.stop()  # Detenemos la música del menú
+                pygame.time.wait(int(self.move_salir.get_length() * 1000))  # Espera solo la duración del sonido salir
                 pygame.quit()
                 sys.exit()
     def run(self):

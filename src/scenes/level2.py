@@ -100,25 +100,25 @@ class Level2(Scene):
         self.player_last_y = self.player.rect.y
 
         # Activar invulnerabilidad mientras cae
-        self.player.invulnerable_from_hit = player_is_falling
+        self.player.invulnerable_from_jump = player_is_falling
 
         # Creamos la máscara del jugador para detección precisa
         player_mask = pygame.mask.from_surface(self.player.image)
         stomped_this_frame = False  # Para saltar solo una vez aunque haya varios cangrejos
 
-        for crab in list(self.all_ghosts):
-            if not self.player.rect.colliderect(crab.rect):
+        for ghost in list(self.all_ghosts):
+            if not self.player.rect.colliderect(ghost.rect):
                 continue
 
-            crab_mask = pygame.mask.from_surface(crab.image)
-            offset = (crab.rect.x - self.player.rect.x, crab.rect.y - self.player.rect.y)
+            ghost_mask = pygame.mask.from_surface(ghost.image)
+            offset = (ghost.rect.x - self.player.rect.x, ghost.rect.y - self.player.rect.y)
 
-            if player_mask.overlap(crab_mask, offset):
+            if player_mask.overlap(ghost_mask, offset):
                 stomp_threshold = max(15, player_velocity_y * 1.5)
-                is_stomp = player_is_falling and (self.player.rect.bottom - crab.rect.top) < stomp_threshold
+                is_stomp = player_is_falling and (self.player.rect.bottom - ghost.rect.top) < stomp_threshold
 
                 if is_stomp:
-                    crab.kill()
+                    ghost.kill()
                     if not stomped_this_frame and hasattr(self.player, 'jump'):
                         self.player.jump(strength=-8)
                         stomped_this_frame = True
@@ -126,19 +126,12 @@ class Level2(Scene):
                 else:
                     # Si el jugador no lo pisa, recibe daño
                     if hasattr(self.player, 'take_damage'):
-                        self.player.take_damage(10, knockback_strength=20)
+                        self.player.take_damage(10, knockback_strength=20,source_x=ghost.rect.centerx)
 
         # Quitar invulnerabilidad al tocar el suelo
         if self.player.rect.bottom >= LVL1_GROUND_Y:
-            self.player.invulnerable_from_hit = False
+            self.player.invulnerable_from_jump = False
         
-        # Quitar invulnerabilidad por golpe si expiró
-        if getattr(self.player, 'invulnerable_from_hit', False):
-            if self.player.invulnerable_timer > 0.0:
-                self.player.invulnerable_timer -= dt
-                if self.player.invulnerable_timer <= 0:
-                    self.player.invulnerable_from_hit = False
-                    self.player.invulnerable_timer = 0.0
 
         # Actualizar temporizador
         time_countdown = 30 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000

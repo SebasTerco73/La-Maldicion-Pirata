@@ -1,6 +1,6 @@
 import pygame
 import random
-from settings import IMAGES_LVL1 as ENEMIES, SCREEN_WIDTH
+from settings import IMAGES_LVL1 as ENEMIES, SCREEN_WIDTH, SOUNDS_LVL1
 from .character import Character
 
 
@@ -15,6 +15,7 @@ class Crab(Character):
         self.gravity = 300.0
         self.on_ground = True
         self.ground_y = ground
+        self.sound_kill = pygame.mixer.Sound(SOUNDS_LVL1["lvl1_sound_kill_enemy"])
         # Movimiento
         self.direction = random.choice([-1, 1])
         self.movement_timer = 0.0
@@ -80,7 +81,9 @@ class Crab(Character):
 
             if is_falling and player_bottom < enemy_top + collision_threshold:
                 # El jugador elimina al cangrejo
+                self.sound_kill.play()
                 self.kill()  # Elimina el sprite de todos los grupos
+                
                 # Dar un pequeño rebote al jugador
                 if hasattr(player, 'jump_strength'):
                     player.vel_y = player.jump_strength * 0.5  # La mitad de la fuerza de salto normal

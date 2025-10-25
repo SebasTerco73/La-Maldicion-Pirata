@@ -28,7 +28,7 @@ class Level1(Scene):
         self.bg_x2 = SCREEN_WIDTH
         self.bg_scroll_speed = 50
         self.mouse_visible = False
-        
+       
         self.init_audio()
         self.reset_level() # Usar reset_level para la configuración inicial
         self.player_last_y = 0
@@ -101,7 +101,7 @@ class Level1(Scene):
         self.player_last_y = self.player.rect.y
 
         # Activar invulnerabilidad mientras cae
-        # self.player.invulnerable_from_hit = player_is_falling
+        self.player.invulnerable_from_jump = player_is_falling
 
         # Creamos la máscara del jugador para detección precisa
         player_mask = pygame.mask.from_surface(self.player.image)
@@ -110,7 +110,7 @@ class Level1(Scene):
         for crab in list(self.all_crabs):
             if not self.player.rect.colliderect(crab.rect):
                 continue
-
+            
             crab_mask = pygame.mask.from_surface(crab.image)
             offset = (crab.rect.x - self.player.rect.x, crab.rect.y - self.player.rect.y)
 
@@ -123,7 +123,6 @@ class Level1(Scene):
                     if not stomped_this_frame and hasattr(self.player, 'jump'):
                         self.player.jump(strength=-8)
                         stomped_this_frame = True
-
                 else:
                     # Si el jugador no lo pisa, recibe daño
                     if hasattr(self.player, 'take_damage'):
@@ -131,7 +130,9 @@ class Level1(Scene):
 
         # Quitar invulnerabilidad al tocar el suelo
         if self.player.rect.bottom >= LVL1_GROUND_Y:
-            self.player.invulnerable_from_hit = False
+            self.player.invulnerable_from_jump = False
+        
+        
         
 
         # Actualizar temporizador

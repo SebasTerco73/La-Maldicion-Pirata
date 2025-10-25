@@ -41,7 +41,8 @@ SOUNDS_PLAYER = {
 
 SOUNDS_LVL1 = {
     "level1_sound": "assets/sounds/lvl1_sound_LLuvia.mp3",
-    "lvl1_sound_Truenos": "assets/sounds/lvl1_sound_Trueno.mp3"
+    "lvl1_sound_Truenos": "assets/sounds/lvl1_sound_Trueno.mp3",
+    "lvl1_sound_kill_enemy": "assets/sounds/kill-enemy.mp3"
 }
 
 FONTS = {

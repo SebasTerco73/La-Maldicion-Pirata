@@ -1,7 +1,6 @@
 # player.py
 import pygame
 from settings import IMAGES, SCREEN_WIDTH, SOUNDS_PLAYER
-from .character import Character
 from .events import GameEvents, EventSystem  # Use relative import if events.py is in the same directory
 
 class Player(pygame.sprite.Sprite):
@@ -17,9 +16,6 @@ class Player(pygame.sprite.Sprite):
         self.frames_jump_left = [pygame.transform.flip(frame, True, False) for frame in self.frames_jump]
 
         self.sound_jump = pygame.mixer.Sound(SOUNDS_PLAYER["player_sound_jump"])
-
-        self.knockback_vel_x = 0
-        self.knockback_duration = 0
 
         self.frame_actual = 0.0  # índice del frame
         # No se usa pantalla.blit(...) porque Level1.draw() ya hace self.screen.blit(sprite.image, ...) para todos los sprites.
@@ -38,12 +34,18 @@ class Player(pygame.sprite.Sprite):
         # Estado de salud
         self.max_health = 100
         self.health = self.max_health
-        self.invulnerable = False
-        self.invulnerable_time = 1000  # milisegundos (1 segundo)
-        self.last_hit_time = 0
+        # Invulnerabilidad temporal tras recibir daño (segundos)
+        self.invulnerable_timer_jump = 0.0
+        self.invulnerable_from_jump = False
+        self.invulnerable_duration_jump = 1.0
 
-        # Sistema de eventos (opcional). Si no se pasa uno externo, creamos uno local
+        self.invulnerable_from_damage = False
+        self.invulnerable_timer_damage = 0.0
+        self.invulnerable_duration_damage = 1.0
         self.event_system = EventSystem()
+
+        self.knockback_vel_x = 0.0
+        self.knockback_decay = 800.0  # velocidad con la que se frena el knockback (px/s)
 
     def extraer_frames(self, sheet, cols, rows, scale=None):
         frames = []
@@ -62,6 +64,8 @@ class Player(pygame.sprite.Sprite):
         return frames
         
     def handle_input(self, dt):
+        # if abs(self.knockback_vel_x) > 0.1:
+        #     return  # ignorar input mientras dura el empuje
         keys = pygame.key.get_pressed()
         dx = 0
 
@@ -117,14 +121,39 @@ class Player(pygame.sprite.Sprite):
             self.image = frames_jump[int(self.frame_actual)]
         
     def apply_gravity(self, dt):
+    # Aumentar velocidad vertical (gravedad)
         self.vel_y += self.gravity * dt
         self.rect.y += self.vel_y * dt
-        
+
+        # Verificar si toca el suelo
         if self.rect.bottom >= self.ground_y:
             self.rect.bottom = self.ground_y
             self.vel_y = 0
             self.on_ground = True
-    
+        else:
+            self.on_ground = False
+        
+    def update(self, dt):
+        self.handle_input(dt)
+        self.clamp_to_world()
+        self.apply_gravity(dt)
+        # Actualizar timers
+        self.invulnerabilityHandle(dt)
+
+
+    def invulnerabilityHandle(self,dt):
+        if self.invulnerable_timer_jump > 0.0:
+            self.invulnerable_timer_jump -= dt
+            if self.invulnerable_timer_jump <= 0.0:
+                self.invulnerable_timer_jump = 0.0
+                self.invulnerable_from_jump = False
+
+        if self.invulnerable_timer_damage > 0.0:
+            self.invulnerable_timer_damage -= dt
+            if self.invulnerable_timer_damage <= 0.0:
+                self.invulnerable_timer_damage = 0.0
+                self.invulnerable_from_damage = False
+                self.invulnerable = False
 
     def clamp_to_world(self):
         """Evita que el jugador salga de los límites del mundo (no solo de la pantalla)."""
@@ -138,34 +167,42 @@ class Player(pygame.sprite.Sprite):
         return self.vel_y > 0 and not self.on_ground
 
     def take_damage(self, amount, knockback_strength=0, source_x=None):
-        """Aplica daño al jugador y activa la invulnerabilidad temporal."""
-        if amount <= 0 or self.invulnerable:
+        
+        if knockback_strength and source_x is not None:
+            if self.rect.centerx < source_x:
+                self.rect.x -= knockback_strength  # retrocede a la izquierda
+            else:
+                self.rect.x += knockback_strength  # retrocede a la derecha
+
+        if amount <= 0:
+            return
+        if self.invulnerable_from_jump or self.invulnerable_from_damage:
+            return
+        # No aplicar daño si está invulnerable
+        if getattr(self, 'invulnerable_from_hit', False):
             return
 
-        # Aplicar daño
+        # Restar vida
         self.health = max(0, self.health - amount)
-        print(f"💥 Daño recibido! Salud: {self.health}")
-
-        # Activar invulnerabilidad
-        self.invulnerable = True
-        self.last_hit_time = pygame.time.get_ticks()  # tiempo actual en ms
-        self.image.set_alpha(128)  # semitransparente (feedback visual)
-
-        # Knockback (retroceso al ser golpeado)
+        # Activar invulnerabilidad temporal
+         
+        # Knockback (si se indica)
         if knockback_strength and source_x is not None:
             direction = -1 if self.rect.centerx < source_x else 1
-            self.knockback_vel_x = direction * knockback_strength  # velocidad de retroceso
-            self.knockback_duration = 0.2  # segundos de retroceso
+            self.knockback_vel_x = knockback_strength * direction  # velocidad inicial
 
+        self.invulnerable_from_damage = True
+        self.invulnerable_timer_damage = self.invulnerable_duration_jump  # 1 segundo por defecto
+        self.invulnerable = True  # <-- para parpadeo visual  
 
-        # Emitir evento opcional
+        # Emitir evento de daño si existe
         if hasattr(self, 'event_system') and hasattr(self.event_system, 'emit'):
             try:
                 self.event_system.emit(GameEvents.PLAYER_DAMAGE, damage=amount)
             except Exception:
                 pass
 
-        # Si muere
+        # Chequear si murió
         if self.health <= 0:
             self.health = 0
             if hasattr(self, 'event_system') and hasattr(self.event_system, 'emit'):
@@ -174,31 +211,4 @@ class Player(pygame.sprite.Sprite):
                 except Exception:
                     pass
 
-    def update(self, dt):
-        """Actualiza movimiento, gravedad e invulnerabilidad."""
-        self.handle_input(dt)
-        self.clamp_to_world()
-        self.apply_gravity(dt)
-
-        if self.knockback_duration > 0:
-            self.rect.x += self.knockback_vel_x * dt
-            self.knockback_duration -= dt
-            if self.knockback_duration <= 0:
-                self.knockback_vel_x = 0
-        else:
-            self.handle_input(dt)
-
-        self.clamp_to_world()
-        self.apply_gravity(dt)
-
-        # --- Control de invulnerabilidad ---
-        if self.invulnerable:
-            current_time = pygame.time.get_ticks()
-            if current_time - self.last_hit_time >= self.invulnerable_time:
-                self.invulnerable = False
-                self.image.set_alpha(255)
-            else:
-                alpha = 128 if (current_time // 100) % 2 == 0 else 255
-                self.image.set_alpha(alpha)
-
-
+                    

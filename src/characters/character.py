@@ -12,10 +12,5 @@ class Character(pygame.sprite.Sprite):
     def move(self, dx, dt=1):
         self.rect.x += dx * self.speed * dt
 
-    
-            
-            
-            
-
     def update(self):
         pass
