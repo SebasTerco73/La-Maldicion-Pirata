@@ -1,0 +1,66 @@
+# menu.py
+import pygame
+import sys
+from settings import IMAGES_MENU, SOUNDS_MENU, RED, SCREEN_HEIGHT, SCREEN_WIDTH, LANGUAGE, FONTS
+from .scene import Scene
+
+class GameOver(Scene):
+    def __init__(self, screen):
+        super().__init__(screen) 
+        self.screen = screen
+        self.background = pygame.image.load(IMAGES_MENU["fin1"]).convert_alpha()
+        self.background = pygame.transform.scale(self.background, (400, 400))
+        self.init_audio()
+        lang = LANGUAGE
+        self.credits_text = "Trabajo práctico - Rodriguez, Guiñazú, Solari, Ugarte, Puche - Programación de videojuegos"
+
+    def draw(self):
+        self.screen.fill((0, 0, 0))
+        bg_rect = self.background.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.screen.blit(self.background, bg_rect)
+        # Créditos
+        credits_surface = self.text_font.render(self.credits_text, True, RED)
+        credits_rect = credits_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 20))
+        self.screen.blit(credits_surface, credits_rect)
+
+        self.draw_cursor()
+
+    def draw_text_with_outline(self, text, font, text_color, outline_color, x, y):
+        base = font.render(text, True, text_color)
+        outline = font.render(text, True, outline_color)
+        rect = base.get_rect(center=(x, y))
+        for dx, dy in [(1,0), (-1,0), (0,1), (0,-1), (1,1), (-1,-1), (1,-1), (-1,1)]:
+            self.screen.blit(outline, rect.move(dx, dy))
+        self.screen.blit(base, rect)
+
+    def init_audio(self):
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
+        pygame.mixer.music.set_volume(0.2)
+        pygame.mixer.music.load(SOUNDS_MENU["fin1"])
+        pygame.mixer.music.play(0)
+        pygame.mixer.music.set_endevent(pygame.USEREVENT + 1)  
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            self.handle_global_events(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.USEREVENT + 1:
+                self.background = pygame.image.load(IMAGES_MENU["fin2"]).convert_alpha()
+                self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+                self.credits_text = "¡Gracias por jugar! - Enter para salir"
+                self.text_font = pygame.font.Font(FONTS["main_font"], 36)
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    pygame.mixer.music.stop()
+                    pygame.quit()
+                    sys.exit()
+
+    def run(self):
+            self.handle_events()    
+            self.draw()             
+            pygame.display.flip()   
+ 

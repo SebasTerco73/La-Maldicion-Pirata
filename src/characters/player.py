@@ -27,9 +27,11 @@ class Player(pygame.sprite.Sprite):
         self.facing = 1
         self.vel_y = 0
         self.restriction = restriction_x
-        self.speed = 200
+        # self.speed = 200
+        self.speed =400
         self.gravity = 1500
-        self.jump_strength = -550
+        # self.jump_strength = -550
+        self.jump_strength = -800
         self.on_ground = False
         self.ground_y = ground_y
         self.world_width = world_width if world_width is not None else SCREEN_WIDTH
@@ -64,10 +66,22 @@ class Player(pygame.sprite.Sprite):
                     frame = pygame.transform.smoothscale(frame, scale)
                 frames.append(frame)
         return frames
-        
+    
+    def apply_knockback_motion(self, dt):
+        """Aplica el movimiento horizontal del knockback con desaceleración suave."""
+        if abs(self.knockback_vel_x) > 0.1:
+            # Aplicar desplazamiento según la velocidad de knockback
+            self.rect.x += self.knockback_vel_x * dt
+
+            # Frenar gradualmente el knockback
+            if self.knockback_vel_x > 0:
+                self.knockback_vel_x = max(0, self.knockback_vel_x - self.knockback_decay * dt)
+            else:
+                self.knockback_vel_x = min(0, self.knockback_vel_x + self.knockback_decay * dt)
+            
     def handle_input(self, dt):
-        # if abs(self.knockback_vel_x) > 0.1:
-        #     return  # ignorar input mientras dura el empuje
+        if abs(self.knockback_vel_x) > 0.1:
+            return  # ignorar input mientras dura el empuje
         keys = pygame.key.get_pressed()
         dx = 0
 
@@ -137,6 +151,7 @@ class Player(pygame.sprite.Sprite):
         
     def update(self, dt):
         self.handle_input(dt)
+        self.apply_knockback_motion(dt)  
         self.clamp_to_world()
         self.apply_gravity(dt)
         # Actualizar timers
@@ -169,6 +184,16 @@ class Player(pygame.sprite.Sprite):
     @property
     def is_falling(self):
         return self.vel_y > 0 and not self.on_ground
+    
+    def apply_knockback(self, source_x, strength=30):
+        """Aplica empuje horizontal sin importar si el jugador está invulnerable."""
+        # Determinar dirección del empuje
+        if self.rect.centerx < source_x:
+            direction = -1  # Golpe desde la derecha → empuja a la izquierda
+        else:
+            direction = 1   # Golpe desde la izquierda → empuja a la derecha
+
+        self.knockback_vel_x = strength * direction
 
     def take_damage(self, amount, knockback_strength=0, source_x=None):
         
@@ -194,7 +219,7 @@ class Player(pygame.sprite.Sprite):
         # Knockback (si se indica)
         if knockback_strength and source_x is not None:
             direction = -1 if self.rect.centerx < source_x else 1
-            self.knockback_vel_x = knockback_strength * direction  # velocidad inicial
+            self.knockback_vel_x = knockback_strength * direction # velocidad inicial
 
         self.invulnerable_from_damage = True
         self.invulnerable_timer_damage = self.invulnerable_duration_jump  # 1 segundo por defecto

@@ -1,23 +1,30 @@
 import pygame
 import random
-from settings import IMAGES_LVL2 as ENEMIES, SCREEN_WIDTH, SOUNDS_LVL1
+from settings import IMAGES_LVL2 as ENEMIES, SCREEN_WIDTH
 from .character import Character
+from .ghost import Ghost
 
 
 class Boss(Character):
-    def __init__(self, ground):
+    def __init__(self, ground, ghost_group):
         # Sitúa al cangrejo sobre el suelo (bottom = ground)
+        self.ground = ground
         y = ground - 150
         x = SCREEN_WIDTH * 3 - 150
         super().__init__(ENEMIES["enemy_boss"], x, y, width=150, height=150)
-        # Física básica
+        self.ghost_group = ghost_group
 
         # Propiedades de daño
-        self.damage = 10
+        self.damage = 20
         self.attack_cooldown = 1.0  # Segundos entre ataques
         self.attack_timer = 0.0
+        self.health = 100
 
-        # self.clamp_to_screen()
+    def regenerate_ghosts(self):
+        for _ in range(20):
+            randomPos = random.randint(600, SCREEN_WIDTH * 3)
+            ghost = Ghost(randomPos, self.ground)
+            self.ghost_group.add(ghost)
 
     def check_collision_with_player(self, player) -> bool:
         """
@@ -27,40 +34,59 @@ class Boss(Character):
             return False
 
         if self.rect.colliderect(player.rect):
-            # Calcular la posición relativa del jugador respecto al cangrejo
-            collision_threshold = 10  # Píxeles de margen para considerar que viene desde arriba
+            collision_threshold = 10
             player_bottom = player.rect.bottom
             enemy_top = self.rect.top
 
-            # Determinar si el jugador está cayendo
+            # Detectar si el jugador está cayendo
             is_falling = getattr(player, 'is_falling', None)
             if is_falling is None:
                 is_falling = (hasattr(player, 'vel_y') and player.vel_y > 0 and not getattr(player, 'on_ground', False))
 
             if is_falling and player_bottom < enemy_top + collision_threshold:
-                # El jugador elimina al cangrejo
-                # self.sound_kill.play()
-                # self.kill()  # Elimina el sprite de todos los grupos
-                pass
-                
-                # Dar un pequeño rebote al jugador
-                if hasattr(player, 'jump_strength'):
-                    player.vel_y = player.jump_strength * 0.5  # La mitad de la fuerza de salto normal
+                # Golpe al boss desde arriba
+                self.take_damage(20)
+
+                # Rebote vertical fuerte
+                push_distance = player.rect.x  # Distancia hasta la izquierda
+                player.rect.x = max(0, player.rect.x - push_distance)  # Se mueve hasta el borde izquierdo
+
                 player.on_ground = False
+
+                # Rebote horizontal (knockback grande hacia la izquierda)
+                player.apply_knockback(source_x=self.rect.centerx, strength=80)
+
                 return True
+
             else:
-                # Si no es un golpe desde arriba y no está en tiempo de invulnerabilidad
+                # Daño al jugador si colisiona de lado o de frente
                 if self.attack_timer <= 0.0:
-                    # Intentar llamar a take_damage si existe
                     if hasattr(player, 'take_damage'):
-                        player.take_damage(self.damage)
-                    else:
-                        if hasattr(player, 'health'):
-                            player.health -= self.damage
+                        player.apply_knockback(source_x=self.rect.centerx, strength=80)
+
+                        # El daño se aplica solo si no está invulnerable
+                        if not (player.invulnerable_from_damage or player.invulnerable_from_jump):
+                            player.take_damage(self.damage)
+
+                    elif hasattr(player, 'health'):
+                        player.health -= self.damage
+
                     self.attack_timer = self.attack_cooldown
+
                 return True
 
         return False
+
+    
+    def take_damage(self, amount):
+        """Reduce la vida del boss y lo elimina si llega a 0."""
+        self.health -= amount
+        if self.health <= 0:
+            self.health = 0
+            self.kill()  # elimina al boss del juego
+        else:
+        # Cada vez que recibe daño, regenerar fantasmas
+            self.regenerate_ghosts()
 
     def update(self, dt, player=None):
         # Actualizar temporizador de ataque

@@ -1,4 +1,3 @@
-# lvl1.py
 import random
 import pygame
 import sys
@@ -7,6 +6,7 @@ from .scene import Scene
 from characters.player import Player
 from characters.ghost import Ghost 
 from characters.boss import Boss
+from scenes.gameover import GameOver
 
 class Level2(Scene):
     def __init__(self, screen):
@@ -73,7 +73,7 @@ class Level2(Scene):
                 elif self.state == "paused" and event.key in (pygame.K_ESCAPE, pygame.K_m):
                     pygame.mixer.music.stop()
                     self.running = False
-
+            
     def update(self, dt):
         # Si el juego está en pausa o terminado, no se actualiza la lógica
         if self.state != "playing":
@@ -93,6 +93,7 @@ class Level2(Scene):
         self.all_sprites.update(dt)
         self.all_ghosts.update(dt, self.player)
         self.group_boss.update(dt, self.player)
+
        
         # -----------------------------
         # Colisiones jugador - cangrejos
@@ -106,7 +107,6 @@ class Level2(Scene):
 
         # Creamos la máscara del jugador para detección precisa
         player_mask = pygame.mask.from_surface(self.player.image)
-        stomped_this_frame = False  # Para saltar solo una vez aunque haya varios cangrejos
 
         for ghost in list(self.all_ghosts):
             if not self.player.rect.colliderect(ghost.rect):
@@ -121,30 +121,55 @@ class Level2(Scene):
 
                 if is_stomp:
                     ghost.kill()
-                    if not stomped_this_frame and hasattr(self.player, 'jump'):
-                        stomped_this_frame = True
-
+                   
                 else:
                     # Si el jugador no lo pisa, recibe daño
                     if hasattr(self.player, 'take_damage'):
                         self.player.take_damage(10, knockback_strength=20,source_x=ghost.rect.centerx)
 
+        # -----------------------------
+        # Colisión jugador - Boss
+        # -----------------------------
+        for boss in list(self.group_boss):
+            if not self.player.rect.colliderect(boss.rect):
+                continue
+
+            boss_mask = pygame.mask.from_surface(boss.image)
+            offset = (boss.rect.x - self.player.rect.x, boss.rect.y - self.player.rect.y)
+
+            is_stomp = False  # <-- inicializar siempre
+
+            if player_mask.overlap(boss_mask, offset):
+                stomp_threshold = max(15, player_velocity_y * 1.5)
+                is_stomp = player_is_falling and (self.player.rect.bottom - boss.rect.top) < stomp_threshold
+            
+            if not is_stomp:
+                if hasattr(self.player, 'take_damage'):
+                    self.player.take_damage(20, knockback_strength=20, source_x=boss.rect.centerx)
+
         # Quitar invulnerabilidad al tocar el suelo
         if self.player.rect.bottom >= LVL2_GROUND_Y:
             self.player.invulnerable_from_jump = False
         
-
         # Actualizar temporizador
-        time_countdown = 30 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
+        time_countdown = 100 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
         self.time_text = f"{max(0, time_countdown):.0f}"
         keys = pygame.key.get_pressed()
         # Chequear condiciones de fin de juego
         if getattr(self.player, 'health', 1) <= 0 or time_countdown <= 0 or keys[pygame.K_l]:
             self.state = "gameover"
             self.result = "lose"
-        elif not self.all_ghosts or keys[pygame.K_w]: 
-            self.state = "gameover"
-            self.result = "win"
+        elif not self.all_ghosts or keys[pygame.K_q]: 
+            self.all_ghosts.empty()
+
+   
+
+    def respawn_ghosts(self):
+        self.all_ghosts.empty()
+        for _ in range(30):
+            randomPos = random.randint(600, self.level_width)
+            ghost = Ghost(randomPos, LVL2_GROUND_Y)
+            self.all_ghosts.add(ghost)
 
     def draw(self):
         for i, bg in enumerate(self.bg_layers):
@@ -166,7 +191,20 @@ class Level2(Scene):
 
         # UI (HUD)
         self.draw_health_bar()
-        
+
+        # Dibujar barra de vida del boss si sigue vivo
+        for boss in self.group_boss:
+            if hasattr(boss, 'health'):
+                bar_width, bar_height = 200, 15
+                x = SCREEN_WIDTH - bar_width // 2 - 110
+                y = 20
+                ratio = max(0, boss.health / 100)
+
+                pygame.draw.rect(self.screen, (50, 50, 50), (x, y, bar_width, bar_height))
+                color = (200, 40, 40) if ratio < 0.3 else (230, 200, 0) if ratio < 0.6 else (0, 200, 70)
+                pygame.draw.rect(self.screen, color, (x, y, int(bar_width * ratio), bar_height))
+                pygame.draw.rect(self.screen, (WHITE), (x, y, bar_width, bar_height), 2)
+                
         # Dibujar timer (usando el texto calculado en update)
         text_font = self.load_font(size=40)
         time_surface = text_font.render(self.time_text, True, WHITE)
@@ -239,7 +277,7 @@ class Level2(Scene):
 
     def reset_level(self):
         # Estado de juego
-        self.state = "playing"
+        
         self.result = None
         self.time_trascurrido = pygame.time.get_ticks()
         self.time_text = "20"
@@ -254,7 +292,7 @@ class Level2(Scene):
         # Crear jugador y enemigos
         self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL2_GROUND_Y, world_width=self.level_width, restriction_x=120)
         self.all_sprites.add(self.player)
-        self.boss = Boss(LVL2_GROUND_Y)
+        self.boss = Boss(LVL2_GROUND_Y,self.all_ghosts)
         self.group_boss.add(self.boss)
 
         for _ in range(30):
@@ -267,6 +305,7 @@ class Level2(Scene):
         # Resetear fondo
         self.bg_x1 = 0
         self.bg_x2 = SCREEN_WIDTH
+        self.state = "playing"
 
     def draw_health_bar(self):
         if not hasattr(self, 'player') or self.player is None: return
@@ -303,9 +342,14 @@ class Level2(Scene):
     def run(self):
             self.running = True
             while self.running:
+                print(self.group_boss, list(self.group_boss))
                 dt = self.clock.tick(FPS) / 1000
                 self.handle_events()
                 self.draw()
                 self.update(dt)
                 pygame.display.flip()
+
+            # gameover = GameOver(self.screen)
+            # gameover.run()
+            
     

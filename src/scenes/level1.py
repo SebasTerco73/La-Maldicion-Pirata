@@ -131,9 +131,6 @@ class Level1(Scene):
         if self.player.rect.bottom >= LVL1_GROUND_Y:
             self.player.invulnerable_from_jump = False
         
-        
-        
-
         # Actualizar temporizador
         time_countdown = 30 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
         self.time_text = f"{max(0, time_countdown):.0f}"

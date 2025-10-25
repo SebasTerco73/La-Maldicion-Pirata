@@ -12,6 +12,9 @@ IMAGES_MENU = {
     "menu_bg": "assets/images/menu_bg.png",
     "menu_bg_en": "assets/images/menu_bg_en.png",
     "menu_bg_zh": "assets/images/menu_bg_zh.png",
+    "fin1": "assets/images/player.png",
+    "fin2": "assets/images/team.png"
+
 }
 
 IMAGES_LVL1 = {
@@ -34,6 +37,7 @@ SOUNDS_MENU = {
     "menu_move": "assets/sounds/menu_move.mp3",
     "menu_enter":"assets/sounds/menu_enter.mp3",
     "menu_salir":"assets/sounds/menu_salir.mp3",
+    "fin1": "assets/sounds/solito.mp3"
 }
 
 SOUNDS_PLAYER = {
