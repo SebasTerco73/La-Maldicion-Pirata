@@ -11,9 +11,8 @@ class Scene:
         self.font = self.load_font()
         self.text_font = self.load_font(size=14)
         # Contador de puntaje (por enemigos derrotados). Cada nivel reinicia esto en su reset_level.
-        global GLOBAL_SCORE
-        GLOBAL_SCORE = self.score
-
+        self.score = 0
+        
         # --- Cursor personalizado (global para todas las escenas) ---
         self.cursor_img = pygame.image.load(IMAGES["cursor"]).convert_alpha()
         self.cursor_img = pygame.transform.scale(self.cursor_img, (32, 32))  # tamaño recomendado
