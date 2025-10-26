@@ -82,7 +82,8 @@ SOUNDS_LVL2 = {
 }
 
 FONTS = {
-    "main_font": "assets/fonts/main_font.ttf"
+    "main_font": "assets/fonts/main_font.ttf",
+    "NotoSansCJKBold": "assets/fonts/Noto Sans CJK Bold.otf"
 }
 
 # --- Configuración general ---
@@ -94,6 +95,75 @@ BLUE = (0, 0, 255)
 RED = (120, 6, 6)
 MENU_FONT_SIZE = 40
 MENU_MARGIN = 20
-LANGUAGE = "es" 
+
+# Textos localizados usados por las escenas (menú principal y opciones).
+# Añadir aquí las cadenas que se usan en varias pantallas facilita la internacionalización.
+TEXTS = {
+    "es": {
+        "menu": ["Iniciar Partida", "Opciones", "Salir"],
+        "options": ["Resolución", "Idioma", "Volumen", "Volver al menú"],
+        "resolution_window": "Resolución: Ventana",
+        "resolution_fullscreen": "Resolución: Pantalla Completa",
+        "volume_format": "{label}: < {level} >",
+        "score_label": "Puntos",
+        "global_score_label": "Total"
+    },
+    "en": {
+        "menu": ["Play", "Options", "Exit"],
+        "options": ["Resolution", "Language", "Volume", "Return to Menu"],
+        "resolution_window": "Resolution: Window",
+        "resolution_fullscreen": "Resolution: Fullscreen",
+        "volume_format": "{label}: < {level} >",
+        "score_label": "Score",
+        "global_score_label": "Total"
+    },
+    "zh": {
+        "menu": ["开始游戏", "选项", "退出"],
+        "options": ["分辨率", "语言", "音量", "返回菜单"],
+        "resolution_window": "分辨率：窗口",
+        "resolution_fullscreen": "分辨率：全屏",
+        "volume_format": "{label}: < {level} >",
+        "score_label": "分数",
+        "global_score_label": "总计"
+    }
+}
+
+# Mensajes genéricos usados en overlays (fin de nivel, pausa, créditos)
+for lang, table in TEXTS.items():
+    if lang == 'es':
+        table.update({
+            'end_title_win': 'GANASTE',
+            'end_title_lose': 'PERDISTE',
+            'end_lines_lose': ['R - Reintentar', 'M o ESC - Volver al menú'],
+            'end_lines_win': ['Enter - Continuar'],
+            'pause_title': 'PAUSA',
+            'pause_lines': ['P - Continuar', 'M o ESC - Volver al menú'],
+            'thanks_exit': '¡Gracias por jugar! - Enter para salir'
+        })
+    elif lang == 'en':
+        table.update({
+            'end_title_win': 'YOU WIN',
+            'end_title_lose': 'YOU LOSE',
+            'end_lines_lose': ['R - Retry', 'M or ESC - Return to Menu'],
+            'end_lines_win': ['Enter - Continue'],
+            'pause_title': 'PAUSE',
+            'pause_lines': ['P - Continue', 'M or ESC - Return to Menu'],
+            'thanks_exit': 'Thanks for playing! - Enter to exit'
+        })
+    elif lang == 'zh':
+        table.update({
+            'end_title_win': '你赢了',
+            'end_title_lose': '你输了',
+            'end_lines_lose': ['R - 重试', 'M 或 ESC - 返回菜单'],
+            'end_lines_win': ['回车 - 继续'],
+            'pause_title': '暂停',
+            'pause_lines': ['P - 继续', 'M 或 ESC - 返回菜单'],
+            'thanks_exit': '感谢游玩！按回车退出'
+        })
+
+LANGUAGE = "es"
+
 LVL1_GROUND_Y = 500
 LVL2_GROUND_Y = 500
+# Puntaje global acumulado entre niveles
+GLOBAL_SCORE = 0

@@ -1,6 +1,7 @@
 import random
 import pygame
 import sys
+import settings
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL1_GROUND_Y,LVL2_GROUND_Y, WHITE
 from .scene import Scene
 from characters.player import Player
@@ -25,8 +26,8 @@ class Level2(Scene):
             pygame.image.load(IMAGES_LVL2["bg_middle"]).convert_alpha(),
             pygame.image.load(IMAGES_LVL2["bg_near"]).convert_alpha(),
             pygame.image.load(IMAGES_LVL2["bg_front"]).convert_alpha()
-            #pygame.image.load(IMAGES_LVL1["level1_bg"]).convert()
-                        ]
+            # pygame.image.load(IMAGES_LVL1["level1_bg"]).convert()
+        ]
         # Sistema de desplazamiento infinito del fondo
 
         self.bg_layers = [pygame.transform.scale(bg, (self.level_width, SCREEN_HEIGHT)) for bg in self.bg_layers]
@@ -230,6 +231,8 @@ class Level2(Scene):
             self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
         # UI (HUD)
         self.draw_health_bar()
+        # Mostrar puntaje
+        self.draw_score()
         
         # Dibujar timer (usando el texto calculado en update)
         text_font = self.load_font(size=40)
@@ -260,7 +263,7 @@ class Level2(Scene):
         overlay.fill((0, 0, 0, 170))
         self.screen.blit(overlay, (0, 0))
 
-        title = "GANASTE" if self.result == "win" else "PERDISTE"
+        title = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_title_win') if self.result == 'win' else settings.TEXTS.get(settings.LANGUAGE, {}).get('end_title_lose')
         title_color = (0, 200, 70) if self.result == "win" else (200, 40, 40)
 
         title_font = self.load_font(size=72)
@@ -270,7 +273,7 @@ class Level2(Scene):
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)
 
-        lines = ["Enter - Continuar"]
+        lines = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_lines_win', ["Enter - Continuar"])
         for i, text in enumerate(lines):
             surf = info_font.render(text, True, WHITE)
             rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
@@ -285,11 +288,11 @@ class Level2(Scene):
         title_font = self.load_font(size=72)
         info_font = self.load_font(size=28)
 
-        title_surf = title_font.render("PAUSA", True, WHITE)
+        title_text = settings.TEXTS.get(settings.LANGUAGE, {}).get('pause_title', 'PAUSA')
+        title_surf = title_font.render(title_text, True, WHITE)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)
-
-        lines = ["P - Continuar", "M o ESC - Volver al menú"]
+        lines = settings.TEXTS.get(settings.LANGUAGE, {}).get('pause_lines', ["P - Continuar", "M o ESC - Volver al menú"])
         for i, text in enumerate(lines):
             surf = info_font.render(text, True, WHITE)
             rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
@@ -307,13 +310,15 @@ class Level2(Scene):
         self.sound_win_played = False #sonido victoria
 
         
-    # Grupos de sprites
+        # Grupos de sprites
         self.all_sprites = pygame.sprite.Group()
         self.all_cannons = pygame.sprite.Group()
         self.group_boss = pygame.sprite.Group()
+        # Reiniciar puntaje
+        self.score = 0
 
         # Crear jugador y enemigos
-       # self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
+        # self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
         self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y, world_width=self.level_width)
         self.all_sprites.add(self.player)
         self.boss = Boss(LVL2_GROUND_Y)
@@ -325,6 +330,10 @@ class Level2(Scene):
             # randomPos = random.randint(200, SCREEN_WIDTH*3)
             randomPos = random.randint(600, self.level_width)
             cannon = Cannon(randomPos, LVL1_GROUND_Y)
+            try:
+                cannon.scene = self
+            except Exception:
+                pass
             self.all_cannons.add(cannon)
 
         # Resetear fondo
@@ -372,5 +381,11 @@ class Level2(Scene):
             self.update(dt)
             self.draw()
             pygame.display.flip()
+        # Acumular puntaje local al puntaje global antes de cambiar de escena
+        try:
+            settings.GLOBAL_SCORE += getattr(self, 'score', 0)
+        except Exception:
+            pass
+
         level3 = Level3(self.screen)
         level3.run()

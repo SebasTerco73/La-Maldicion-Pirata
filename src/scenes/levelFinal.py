@@ -1,6 +1,7 @@
 import random
 import pygame
 import sys
+import settings
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL1_GROUND_Y,LVL2_GROUND_Y, WHITE
 from .scene import Scene
 from characters.player import Player
@@ -8,7 +9,7 @@ from characters.ghost import Ghost
 from characters.boss import Boss
 from .level2 import Level2
 
-class Level2(Scene):
+class LevelFinal(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.clock = pygame.time.Clock()
@@ -116,10 +117,6 @@ class Level2(Scene):
         self.all_sprites.update(dt)
         self.all_ghosts.update(dt, self.player)
         self.group_boss.update(dt, self.player)
- 
-
-
-
         
         # Detección de colisiones
         player_velocity_y = self.player.rect.y - self.player_last_y
@@ -223,6 +220,8 @@ class Level2(Scene):
             self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
         # UI (HUD)
         self.draw_health_bar()
+        # Mostrar puntaje
+        self.draw_score()
         
         # Dibujar timer (usando el texto calculado en update)
         text_font = self.load_font(size=40)
@@ -257,7 +256,7 @@ class Level2(Scene):
         overlay.fill((0, 0, 0, 170))
         self.screen.blit(overlay, (0, 0))
 
-        title = "GANASTE" if self.result == "win" else "PERDISTE"
+        title = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_title_win') if self.result == 'win' else settings.TEXTS.get(settings.LANGUAGE, {}).get('end_title_lose')
         title_color = (0, 200, 70) if self.result == "win" else (200, 40, 40)
 
         title_font = self.load_font(size=72)
@@ -276,9 +275,9 @@ class Level2(Scene):
             self.sound_win_played = False
         #-------------------------------------------------------------------
 
-        lines = ["R - Reintentar", "M o ESC - Volver al menú"]
-        lines2 = ["Enter - Continuar"]
-        if title == "PERDISTE":
+        lines = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_lines_lose', ["R - Reintentar", "M o ESC - Volver al menú"])
+        lines2 = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_lines_win', ["Enter - Continuar"])
+        if self.result == "lose":
             #---------flag_sound_died-------------------------------------------------
             if not self.sound_died_played:
                 self.sound_lose.play()
@@ -289,14 +288,12 @@ class Level2(Scene):
                 rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
                 self.screen.blit(surf, rect)
             
-        elif title == "GANASTE":
-             
+        elif self.result == "win":
             #---------flag_sound_win--------------------------------------------------------
             if not self.sound_win_played:
                 self.sound_win.play()
                 self.sound_win_played = True
             #-----------------------------------------------------------------------
-             
             for i, text in enumerate(lines2):
                 surf = info_font.render(text, True, WHITE)
                 rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
@@ -311,11 +308,11 @@ class Level2(Scene):
         title_font = self.load_font(size=72)
         info_font = self.load_font(size=28)
 
-        title_surf = title_font.render("PAUSA", True, WHITE)
+        title_text = settings.TEXTS.get(settings.LANGUAGE, {}).get('pause_title', 'PAUSA')
+        title_surf = title_font.render(title_text, True, WHITE)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)
-
-        lines = ["P - Continuar", "M o ESC - Volver al menú"]
+        lines = settings.TEXTS.get(settings.LANGUAGE, {}).get('pause_lines', ["P - Continuar", "M o ESC - Volver al menú"])
         for i, text in enumerate(lines):
             surf = info_font.render(text, True, WHITE)
             rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
@@ -333,10 +330,12 @@ class Level2(Scene):
         self.sound_win_played = False #sonido victoria
 
         
-    # Grupos de sprites
+        # Grupos de sprites
         self.all_sprites = pygame.sprite.Group()
         self.all_ghosts = pygame.sprite.Group()
         self.group_boss = pygame.sprite.Group()
+        # Reiniciar puntaje
+        self.score = 0
 
         # Crear jugador y enemigos
        # self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
@@ -351,6 +350,10 @@ class Level2(Scene):
             # randomPos = random.randint(200, SCREEN_WIDTH*3)
             randomPos = random.randint(600, self.level_width)
             ghost = Ghost(randomPos, LVL1_GROUND_Y)
+            try:
+                ghost.scene = self
+            except Exception:
+                pass
             self.all_ghosts.add(ghost)
 
         # Resetear fondo
@@ -399,7 +402,11 @@ class Level2(Scene):
             self.update(dt)
             
             pygame.display.flip()
-        if self.result == "win":
-                #self.play_start_animation()
-                levelBoss = Level2(self.screen)
-                levelBoss.run()
+        # Al salir del bucle principal, no iniciamos recursivamente otra instancia
+        # (antes se intentaba crear/ejecutar Level2 desde aquí causando recursión).
+        # Se deja que el flujo superior (menú/principal) decida la siguiente escena.
+        # Acumular puntaje local al puntaje global antes de terminar el nivel
+        try:
+            settings.GLOBAL_SCORE += getattr(self, 'score', 0)
+        except Exception:
+            pass

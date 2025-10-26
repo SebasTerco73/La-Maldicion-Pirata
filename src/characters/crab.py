@@ -122,3 +122,19 @@ class Crab(Character):
         if player is not None:
             self.check_collision_with_player(player)
 
+    def kill(self):
+        """Sobrescribe kill para notificar al nivel (scene) y evitar doble conteo."""
+        # Evitar doble conteo si ya fue marcado
+        if not getattr(self, '_score_counted', False):
+            self._score_counted = True
+            try:
+                if hasattr(self, 'scene') and hasattr(self.scene, 'score'):
+                    self.scene.score += 1
+            except Exception:
+                pass
+        try:
+            super().kill()
+        except Exception:
+            # En caso de que la superclase no tenga implementación o falle, ignorar
+            pass
+

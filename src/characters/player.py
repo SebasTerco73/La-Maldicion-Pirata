@@ -160,7 +160,8 @@ class Player(pygame.sprite.Sprite):
 
     def setJump(self,jump):
         self.jump_strength= -jump
-
+    
+    # Manejo de invulnerabilidad
     def invulnerabilityHandle(self,dt):
         if self.invulnerable_timer_jump > 0.0:
             self.invulnerable_timer_jump -= dt
