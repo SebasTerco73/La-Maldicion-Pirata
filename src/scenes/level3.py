@@ -19,7 +19,8 @@ class Level3(Scene):
         self.bg_layers = [     
             pygame.image.load(IMAGES_LVL2["bg_far"]).convert_alpha(),
             pygame.image.load(IMAGES_LVL2["bg_middle"]).convert_alpha(),
-            pygame.image.load(IMAGES_LVL2["bg_near"]).convert_alpha()
+            pygame.image.load(IMAGES_LVL2["bg_near"]).convert_alpha(),
+            pygame.image.load(IMAGES_LVL2["bg_front"]).convert_alpha()
                         ]
         # Sistema de desplazamiento infinito del fondo
         self.bg_layers = [pygame.transform.scale(bg, (self.level_width, SCREEN_HEIGHT)) for bg in self.bg_layers]
