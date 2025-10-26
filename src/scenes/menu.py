@@ -1,7 +1,7 @@
-# menu.py
 import pygame
 import sys
-from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, RED, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN,LANGUAGE
+import settings
+from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, RED, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN
 from .scene import Scene
 from .level1 import Level1
 from .options import Options
@@ -9,14 +9,36 @@ class Menu(Scene):
     def __init__(self, screen):
         super().__init__(screen) 
         self.screen = screen
-        self.options = ["Iniciar Partida", "Opciones", "Salir"]
         self.selected_index = 0
-        self.background = pygame.image.load(IMAGES_MENU["menu_bg"]).convert_alpha()
-        self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        # Cargar opciones del menú según el idioma actual (definido en settings.TEXTS)
+        self.current_language = settings.LANGUAGE
+        self.options = settings.TEXTS.get(self.current_language, {}).get("menu", ["Iniciar Partida", "Opciones", "Salir"])
+        # Cargar y escalar fondo
+        self.load_background()
         self.init_audio()
-        lang = LANGUAGE
+
+    def load_background(self):
+        # Selecciona la clave del fondo según el idioma (cae al fondo por defecto si no existe)
+        lang = settings.LANGUAGE
+        if lang == "es":
+            key = "menu_bg"
+        else:
+            key = f"menu_bg_{lang}"
+        path = IMAGES_MENU.get(key, IMAGES_MENU.get("menu_bg"))
+        self.background = pygame.image.load(path).convert_alpha()
+        self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
     def draw(self):
+        # Si el idioma cambió externamente, actualizar opciones y fondo
+        if settings.LANGUAGE != self.current_language:
+            self.current_language = settings.LANGUAGE
+            self.options = settings.TEXTS.get(settings.LANGUAGE, {}).get("menu", self.options)
+            self.load_background()
+            # Recargar fuentes según nuevo idioma (por ejemplo para CJK)
+            self.font = self.load_font()
+            self.text_font = self.load_font(size=14)
+
+        # Dibujar fondo y las opciones
         self.screen.blit(self.background, (0, 0))
         option_height = self.font.get_height()
         total_height = len(self.options) * option_height + (len(self.options) - 1) * MENU_MARGIN

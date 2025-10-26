@@ -1,7 +1,8 @@
 # menu.py
 import pygame
 import sys
-from settings import IMAGES_MENU, SOUNDS_MENU, RED, SCREEN_HEIGHT, SCREEN_WIDTH, LANGUAGE, FONTS
+import settings
+from settings import IMAGES_MENU, SOUNDS_MENU, RED, SCREEN_HEIGHT, SCREEN_WIDTH, FONTS
 from .scene import Scene
 
 class GameOver(Scene):
@@ -12,7 +13,7 @@ class GameOver(Scene):
         self.background = pygame.transform.scale(self.background, (400, 400))
         self.running = True
         self.init_audio()
-        lang = LANGUAGE
+        # créditos (la línea de gracias cambia a continuación cuando termina la música)
         self.credits_text = "Trabajo práctico - Rodriguez, Guiñazú, Solari, Ugarte, Puche - Programación de videojuegos"
     
     def volver_al_menu(self):
@@ -56,8 +57,9 @@ class GameOver(Scene):
             elif event.type == pygame.USEREVENT + 1:
                 self.background = pygame.image.load(IMAGES_MENU["fin2"]).convert_alpha()
                 self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
-                self.credits_text = "¡Gracias por jugar! - Enter para salir"
-                self.text_font = pygame.font.Font(FONTS["main_font"], 36)
+                self.credits_text = settings.TEXTS.get(settings.LANGUAGE, {}).get('thanks_exit', "¡Gracias por jugar! - Enter para salir")
+                # usar la carga de fuentes de la escena (respetando CJK si aplica)
+                self.text_font = self.load_font(size=36)
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:

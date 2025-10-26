@@ -132,3 +132,17 @@ class Ghost(Character):
         if player is not None:
             self.check_collision_with_player(player)
 
+    def kill(self):
+        """Notificar al scene cuando el fantasma muere y evitar doble conteo."""
+        if not getattr(self, '_score_counted', False):
+            self._score_counted = True
+            try:
+                if hasattr(self, 'scene') and hasattr(self.scene, 'score'):
+                    self.scene.score += 1
+            except Exception:
+                pass
+        try:
+            super().kill()
+        except Exception:
+            pass
+

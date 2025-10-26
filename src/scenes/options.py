@@ -1,6 +1,8 @@
+# Imports
 import pygame
 import sys
-from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, WHITE, RED, FPS, SCREEN_HEIGHT, SCREEN_WIDTH,MENU_MARGIN, LANGUAGE
+import settings
+from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, WHITE, RED, FPS, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN
 #.scene porque esta dentro del mismo paquete
 from .scene import Scene
 from .level1 import Level1
@@ -10,16 +12,24 @@ class Options(Scene):
         super().__init__(screen) 
         self.screen = screen
         self.clock = pygame.time.Clock()
-        self.options = ["Resolución", "Idioma", "Volumen", "Volver al menú"]
+        # Inicializar opciones según configuración global de textos si existe
+        self.options = settings.TEXTS.get(settings.LANGUAGE, {}).get("options", ["Resolución", "Idioma", "Volumen", "Volver al menú"])
         self.selected_index = 0
-        self.background = pygame.image.load(IMAGES_MENU["menu_bg"]).convert_alpha()
+        # Cargar fondo según el idioma actual
+        lang = settings.LANGUAGE
+        if lang == "es":
+            bg_key = "menu_bg"
+        else:
+            bg_key = f"menu_bg_{lang}"
+        self.background = pygame.image.load(IMAGES_MENU.get(bg_key, IMAGES_MENU["menu_bg"])) .convert_alpha()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
         
         # Nivel de volumen (de 0 a 10)
         self.volume_level = int(pygame.mixer.music.get_volume() * 10)
         
         self.init_audio()
-        self.language = "es"  # Idioma por defecto: español
+        # Tomar idioma actual desde settings
+        self.language = settings.LANGUAGE
         self.language_options = {
             "es": ["Resolución", "Idioma", "Volumen", "Volver al menú"],
             "en": ["Resolution", "Language", "Volume", "Return to Menu"],
@@ -27,9 +37,9 @@ class Options(Scene):
             }
         self.language_menu = {
             "es": ["Iniciar Partida", "Opciones", "Salir"],
-            "en": ["Play", "Pcion", "Exit"],
-            "zh": ["分辨率", "语言", "音量"]
-            }
+            "en": ["Play", "Options", "Exit"],
+            "zh": ["开始游戏", "选项", "退出"]
+        }
 
 
 
@@ -49,10 +59,14 @@ class Options(Scene):
             # Lógica para texto dinámico de Resolución
             if index == 0:
                 is_fullscreen = self.screen.get_flags() & pygame.FULLSCREEN
-                display_text = "Resolución: Ventana" if is_fullscreen else "Resolución: Pantalla Completa"
+                if is_fullscreen:
+                    display_text = settings.TEXTS.get(settings.LANGUAGE, {}).get("resolution_fullscreen", "Resolución: Pantalla Completa")
+                else:
+                    display_text = settings.TEXTS.get(settings.LANGUAGE, {}).get("resolution_window", "Resolución: Ventana")
             # Lógica para texto dinámico de Volumen
             elif index == 2:
-                display_text = f"{option}: < {self.volume_level} >"
+                vol_format = settings.TEXTS.get(settings.LANGUAGE, {}).get("volume_format", "{label}: < {level} >")
+                display_text = vol_format.format(label=option, level=self.volume_level)
 
             text_surface = self.font.render(display_text, True, color)
             rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, start_y + index * (option_height + MENU_MARGIN)))
@@ -89,20 +103,22 @@ class Options(Scene):
         self.language = languages[new_index]
 
         # Actualizar texto del menú
-        self.options = self.language_options[self.language]
+        # actualizar opciones según settings.TEXTS (si está disponible)
+        self.options = settings.TEXTS.get(self.language, {}).get("options", self.language_options[self.language])
         # actualizar settings global para que otras escenas lo vean
-        LANGUAGE = self.language
+        settings.LANGUAGE = self.language
+
+        # Recargar fuentes en esta escena para que muestren los glyphs correctos (p. ej. chino)
+        self.font = self.load_font()
+        self.text_font = self.load_font(size=14)
 
         # Cambiar fondo y música según idioma
         if self.language == "es":
-            self.background = pygame.image.load(IMAGES_MENU["menu_bg"]).convert_alpha()
-            #pygame.mixer.music.load(SOUNDS_MENU["menu_music"])
+            self.background = pygame.image.load(IMAGES_MENU.get("menu_bg")).convert_alpha()
         elif self.language == "en":
-            self.background = pygame.image.load(IMAGES_MENU["menu_bg_en"]).convert_alpha()
-            #pygame.mixer.music.load(SOUNDS_MENU["menu_music_en"])
+            self.background = pygame.image.load(IMAGES_MENU.get("menu_bg_en")).convert_alpha()
         elif self.language == "zh":
-            self.background = pygame.image.load(IMAGES_MENU["menu_bg_zh"]).convert_alpha()
-            #pygame.mixer.music.load(SOUNDS_MENU["menu_music_zh"])
+            self.background = pygame.image.load(IMAGES_MENU.get("menu_bg_zh")).convert_alpha()
 
         # Redimensionar fondo y reproducir nueva música
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))

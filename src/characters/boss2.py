@@ -80,7 +80,19 @@ class Boss2(Character):
         self.health -= amount
         if self.health <= 0:
             self.health = 0
-            self.kill()  # elimina al boss del juego
+            # Contar la muerte del boss como puntaje y eliminar
+            if not getattr(self, '_score_counted', False):
+                self._score_counted = True
+                try:
+                    if hasattr(self, 'ghost_group') and hasattr(self.ghost_group, 'scene'):
+                        # no usual, pero intentar proteger
+                        pass
+                except Exception:
+                    pass
+            try:
+                self.kill()  # elimina al boss del juego
+            except Exception:
+                pass
         else:
         # Cada vez que recibe daño, regenerar fantasmas
             self.regenerate_ghosts()
