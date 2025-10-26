@@ -1,29 +1,27 @@
-# lvl1.py
 import random
 import pygame
 import sys
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL1, SOUNDS_LVL1, LVL1_GROUND_Y, WHITE
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL2_GROUND_Y, WHITE
 from .scene import Scene
 from characters.player import Player
-from characters.crab import Crab 
-from .level2 import Level2
+from characters.ghost import Ghost 
+from characters.boss2 import Boss2
+from scenes.gameover import GameOver
 
-class Level1(Scene):
+class Level3(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.clock = pygame.time.Clock()
-       
         self.bg_middle_offset = 0  # desplazamiento horizontal acumulado de la capa media
         self.bg_middle_speed = 30  # velocidad de desplazamiento hacia la izquierda (px/seg)
 
         self.level_width = SCREEN_WIDTH * 3
         self.bg_layers = [     
-            pygame.image.load(IMAGES_LVL1["bg_far"]).convert_alpha(),
-            pygame.image.load(IMAGES_LVL1["bg_middle"]).convert_alpha(),
-            pygame.image.load(IMAGES_LVL1["bg_near"]).convert_alpha()
+            pygame.image.load(IMAGES_LVL2["bg_far"]).convert_alpha(),
+            pygame.image.load(IMAGES_LVL2["bg_middle"]).convert_alpha(),
+            pygame.image.load(IMAGES_LVL2["bg_near"]).convert_alpha()
                         ]
         # Sistema de desplazamiento infinito del fondo
-
         self.bg_layers = [pygame.transform.scale(bg, (self.level_width, SCREEN_HEIGHT)) for bg in self.bg_layers]
         self.camera_x = 0
         self.bg_x1 = 0
@@ -35,7 +33,6 @@ class Level1(Scene):
         self.reset_level() # Usar reset_level para la configuración inicial
         self.player_last_y = 0
         self.pause_start_time = 0 # Para registrar cuándo se inicia la pausa
-       
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -63,7 +60,6 @@ class Level1(Scene):
 
                 # Lógica de fin de juego y menú
                 if self.state == "gameover" and self.result == "lose":
-                   
                     if event.key == pygame.K_r:
                         self.reset_level()
                     elif event.key in (pygame.K_ESCAPE, pygame.K_m):
@@ -77,7 +73,7 @@ class Level1(Scene):
                 elif self.state == "paused" and event.key in (pygame.K_ESCAPE, pygame.K_m):
                     pygame.mixer.music.stop()
                     self.running = False
-
+            
     def update(self, dt):
         # Si el juego está en pausa o terminado, no se actualiza la lógica
         if self.state != "playing":
@@ -95,7 +91,9 @@ class Level1(Scene):
 
         # Actualizar sprites
         self.all_sprites.update(dt)
-        self.all_crabs.update(dt, self.player)
+        self.all_ghosts.update(dt, self.player)
+        self.group_boss.update(dt, self.player)
+
        
         # -----------------------------
         # Colisiones jugador - cangrejos
@@ -109,46 +107,74 @@ class Level1(Scene):
 
         # Creamos la máscara del jugador para detección precisa
         player_mask = pygame.mask.from_surface(self.player.image)
-        stomped_this_frame = False  # Para saltar solo una vez aunque haya varios cangrejos
 
-        for crab in list(self.all_crabs):
-            if not self.player.rect.colliderect(crab.rect):
+        for ghost in list(self.all_ghosts):
+            if not self.player.rect.colliderect(ghost.rect):
                 continue
-            
-            crab_mask = pygame.mask.from_surface(crab.image)
-            offset = (crab.rect.x - self.player.rect.x, crab.rect.y - self.player.rect.y)
 
-            if player_mask.overlap(crab_mask, offset):
+            ghost_mask = pygame.mask.from_surface(ghost.image)
+            offset = (ghost.rect.x - self.player.rect.x, ghost.rect.y - self.player.rect.y)
+
+            if player_mask.overlap(ghost_mask, offset):
                 stomp_threshold = max(15, player_velocity_y * 1.5)
-                is_stomp = player_is_falling and (self.player.rect.bottom - crab.rect.top) < stomp_threshold
+                is_stomp = player_is_falling and (self.player.rect.bottom - ghost.rect.top) < stomp_threshold
 
                 if is_stomp:
-                    crab.kill()
-                    if not stomped_this_frame and hasattr(self.player, 'jump'):
-                        stomped_this_frame = True
+                    
+                    ghost.kill()
+                   
                 else:
                     # Si el jugador no lo pisa, recibe daño
                     if hasattr(self.player, 'take_damage'):
-                        self.player.take_damage(10, knockback_strength=20,source_x=crab.rect.centerx)
+                        self.player.take_damage(10, knockback_strength=20,source_x=ghost.rect.centerx)
+
+        # -----------------------------
+        # Colisión jugador - Boss
+        # -----------------------------
+        for boss in list(self.group_boss):
+            if not self.player.rect.colliderect(boss.rect):
+                continue
+
+            boss_mask = pygame.mask.from_surface(boss.image)
+            offset = (boss.rect.x - self.player.rect.x, boss.rect.y - self.player.rect.y)
+
+            is_stomp = False  # <-- inicializar siempre
+
+            if player_mask.overlap(boss_mask, offset):
+                stomp_threshold = max(15, player_velocity_y * 1.5)
+                is_stomp = player_is_falling and (self.player.rect.bottom - boss.rect.top) < stomp_threshold
+            
+            if not is_stomp:
+                if hasattr(self.player, 'take_damage'):
+                    self.player.take_damage(20, knockback_strength=20, source_x=boss.rect.centerx)
 
         # Quitar invulnerabilidad al tocar el suelo
-        if self.player.rect.bottom >= LVL1_GROUND_Y:
+        if self.player.rect.bottom >= LVL2_GROUND_Y:
             self.player.invulnerable_from_jump = False
         
         # Actualizar temporizador
-        time_countdown = 30 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
+        time_countdown = 100 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
         self.time_text = f"{max(0, time_countdown):.0f}"
         keys = pygame.key.get_pressed()
         # Chequear condiciones de fin de juego
         if getattr(self.player, 'health', 1) <= 0 or time_countdown <= 0 or keys[pygame.K_l]:
             self.state = "gameover"
             self.result = "lose"
-        elif not self.all_crabs or keys[pygame.K_w]: 
-            self.state = "gameover"
+        elif not self.all_ghosts or keys[pygame.K_q]: 
+            self.all_ghosts.empty()
+        
+        if self.state == "playing" and not self.group_boss:
             self.result = "win"
+            self.running = False
+
+    def respawn_ghosts(self):
+        self.all_ghosts.empty()
+        for _ in range(30):
+            randomPos = random.randint(600, self.level_width)
+            ghost = Ghost(randomPos, LVL2_GROUND_Y)
+            self.all_ghosts.add(ghost)
 
     def draw(self):
-        # Fondo
         for i, bg in enumerate(self.bg_layers):
             parallax_factor = 0.2 + i * 0.4  # 0.2, 0.6, 1.0
             bg_x = -self.camera_x * parallax_factor
@@ -159,25 +185,37 @@ class Level1(Scene):
 
             self.screen.blit(bg, (bg_x, 0))
 
-        # Sprites
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
-        for crab in self.all_crabs:
+        for crab in self.all_ghosts:
             self.screen.blit(crab.image, (crab.rect.x - self.camera_x, crab.rect.y))
+        for sprite in self.group_boss:
+            self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
 
         # UI (HUD)
         self.draw_health_bar()
-        
+
+        # Dibujar barra de vida del boss si sigue vivo
+        for boss in self.group_boss:
+            if hasattr(boss, 'health'):
+                bar_width, bar_height = 200, 15
+                x = SCREEN_WIDTH - bar_width // 2 - 110
+                y = 20
+                ratio = max(0, boss.health / 100)
+
+                pygame.draw.rect(self.screen, (50, 50, 50), (x, y, bar_width, bar_height))
+                color = (200, 40, 40) if ratio < 0.3 else (230, 200, 0) if ratio < 0.6 else (0, 200, 70)
+                pygame.draw.rect(self.screen, color, (x, y, int(bar_width * ratio), bar_height))
+                pygame.draw.rect(self.screen, (WHITE), (x, y, bar_width, bar_height), 2)
+                
         # Dibujar timer (usando el texto calculado en update)
         text_font = self.load_font(size=40)
         time_surface = text_font.render(self.time_text, True, WHITE)
         time_rect = time_surface.get_rect(center=(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 20))
         self.screen.blit(time_surface, time_rect)
-        
         self.draw_cursor()
         
         if self.state == "gameover":
-            
             self.draw_end_overlay()
         elif self.state == "paused":
             self.draw_pause_overlay()
@@ -187,15 +225,13 @@ class Level1(Scene):
             pygame.mixer.init()
         pygame.mixer.music.set_volume(1)
         pygame.mixer.music.load(SOUNDS_LVL1["level1_sound"])
-        self.sound_lose = pygame.mixer.Sound(SOUNDS_LVL1["lvl_lose"])
-        self.sound_win = pygame.mixer.Sound(SOUNDS_LVL1["lvl_win"])
+        
         self.sfx_thunder = pygame.mixer.Sound(SOUNDS_LVL1["lvl1_sound_Truenos"])
         self.sfx_thunder.set_volume(1)
         self.sfx_thunder.play(loops=-1)
         pygame.mixer.music.play(-1)
 
     def draw_end_overlay(self):
-
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 170))
         self.screen.blit(overlay, (0, 0))
@@ -210,41 +246,19 @@ class Level1(Scene):
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)
 
-        #---flg_sound_died--------------------------------------------------
-        if not hasattr(self, 'sound_died_played'):
-            self.sound_died_played = False
-        #---------------------------------------------------------------
-         #---flg_sound_win---------------------------------------------------
-        if not hasattr(self, 'sound_win_played'):
-            self.sound_win_played = False
-        #-------------------------------------------------------------------
-
         lines = ["R - Reintentar", "M o ESC - Volver al menú"]
         lines2 = ["Enter - Continuar"]
         if title == "PERDISTE":
-            #---------flag_sound_died-------------------------------------------------
-            if not self.sound_died_played:
-                self.sound_lose.play()
-                self.sound_died_played = True
-            #---------------------------------------------------------------------
             for i, text in enumerate(lines):
                 surf = info_font.render(text, True, WHITE)
                 rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
                 self.screen.blit(surf, rect)
-            
         elif title == "GANASTE":
-             
-            #---------flag_sound_win--------------------------------------------------------
-            if not self.sound_win_played:
-                self.sound_win.play()
-                self.sound_win_played = True
-            #-----------------------------------------------------------------------
-             
-            for i, text in enumerate(lines2):
+             for i, text in enumerate(lines2):
                 surf = info_font.render(text, True, WHITE)
                 rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
                 self.screen.blit(surf, rect)
-             
+                
     def draw_pause_overlay(self):
         """Dibuja la pantalla de pausa."""
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -266,35 +280,35 @@ class Level1(Scene):
 
     def reset_level(self):
         # Estado de juego
-        self.state = "playing"
+        
         self.result = None
         self.time_trascurrido = pygame.time.get_ticks()
         self.time_text = "20"
         self.player_last_y = 0
         self.pause_start_time = 0 # Resetear el tiempo de pausa
-        self.sound_died_played = False #sonido de muerte
-        self.sound_win_played = False #sonido victoria
 
         # Grupos de sprites
         self.all_sprites = pygame.sprite.Group()
-        self.all_crabs = pygame.sprite.Group()
+        self.all_ghosts = pygame.sprite.Group()
+        self.group_boss = pygame.sprite.Group()
 
         # Crear jugador y enemigos
-       # self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
-        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y, world_width=self.level_width, restriction_x=120)
-
+        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL2_GROUND_Y, world_width=self.level_width, restriction_x=120, jump=-750)
         self.all_sprites.add(self.player)
+        self.boss = Boss2(LVL2_GROUND_Y,self.all_ghosts)
+        self.group_boss.add(self.boss)
+
         for _ in range(30):
-            #randomPos = random.randint(0, SCREEN_WIDTH - 100)
-            # randomPos = random.randint(200, SCREEN_WIDTH*3)
             randomPos = random.randint(600, self.level_width)
-            crab = Crab(randomPos, LVL1_GROUND_Y)
-            self.all_crabs.add(crab)
+            ghost = Ghost(randomPos, LVL2_GROUND_Y)
+            self.all_ghosts.add(ghost)
 
         # Resetear fondo
         self.bg_x1 = 0
         self.bg_x2 = SCREEN_WIDTH
-        
+        if self.group_boss:
+            self.state = "playing"
+
     def draw_health_bar(self):
         if not hasattr(self, 'player') or self.player is None: return
         
@@ -327,56 +341,6 @@ class Level1(Scene):
         except Exception:
             pass # Fallo silencioso si la fuente no carga
 
-
-    #-----------------------------------------------------------------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    #-----------------------------------------------------------------------------------------------------------------------------------------------------------
-    """Reproduce una animación antes de iniciar el juego."""
-
-    def play_start_animation(self):
-        
-        clock = pygame.time.Clock()
-
-        # Cargar frames
-        frames = [
-            pygame.image.load(path).convert_alpha()
-            for path in IMAGES_LVL1["start_anim_frames"]
-        ]
-        frames = [
-            pygame.transform.scale(f, (SCREEN_WIDTH, SCREEN_HEIGHT)) for f in frames
-        ]
-
-        frame_duration = 250  # milisegundos por frame (0.25 seg)
-        current_frame = 0
-        last_update = pygame.time.get_ticks()
-
-  
-
-        running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-            now = pygame.time.get_ticks()
-            if now - last_update > frame_duration:
-                current_frame += 1
-                last_update = now
-                if current_frame >= len(frames):
-                    running = False  # termina animación
-
-            if current_frame < len(frames):
-                self.screen.blit(frames[current_frame], (0, 0))
-            pygame.display.flip()
-            clock.tick(60)
-       
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
     def run(self):
             self.running = True
             while self.running:
@@ -385,7 +349,8 @@ class Level1(Scene):
                 self.draw()
                 self.update(dt)
                 pygame.display.flip()
-            if self.result == "win":
-                self.play_start_animation()
-                level2 = Level2(self.screen)
-                level2.run()
+
+            gameover = GameOver(self.screen)
+            gameover.run()
+            
+    

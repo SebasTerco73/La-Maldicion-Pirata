@@ -1,27 +1,34 @@
 import random
 import pygame
 import sys
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL2_GROUND_Y, WHITE
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL1_GROUND_Y,LVL2_GROUND_Y, WHITE
 from .scene import Scene
 from characters.player import Player
-from characters.ghost import Ghost 
+from characters.cannon import Cannon 
 from characters.boss import Boss
-from scenes.gameover import GameOver
+from .level3 import Level3
 
 class Level2(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.clock = pygame.time.Clock()
-        self.bg_middle_offset = 0  # desplazamiento horizontal acumulado de la capa media
+        
+        self.bg_middle_offset = 0  # desplazamiento horizontal acumulado( de la capa media)
         self.bg_middle_speed = 30  # velocidad de desplazamiento hacia la izquierda (px/seg)
+
+        self.bg_front_offset = 0       # desplazamiento horizontal acumulado( de la capa cercana)
+        self.bg_front_speed = 60       # velocidad de desplazamiento (px/seg)
 
         self.level_width = SCREEN_WIDTH * 3
         self.bg_layers = [     
             pygame.image.load(IMAGES_LVL2["bg_far"]).convert_alpha(),
             pygame.image.load(IMAGES_LVL2["bg_middle"]).convert_alpha(),
-            pygame.image.load(IMAGES_LVL2["bg_near"]).convert_alpha()
+            pygame.image.load(IMAGES_LVL2["bg_near"]).convert_alpha(),
+            pygame.image.load(IMAGES_LVL2["bg_front"]).convert_alpha()
+            #pygame.image.load(IMAGES_LVL1["level1_bg"]).convert()
                         ]
         # Sistema de desplazamiento infinito del fondo
+
         self.bg_layers = [pygame.transform.scale(bg, (self.level_width, SCREEN_HEIGHT)) for bg in self.bg_layers]
         self.camera_x = 0
         self.bg_x1 = 0
@@ -30,6 +37,9 @@ class Level2(Scene):
         self.mouse_visible = False
         
         self.init_audio()
+
+        self.sound_lose = pygame.mixer.Sound(SOUNDS_LVL1["lvl_lose"])
+        self.sound_win = pygame.mixer.Sound(SOUNDS_LVL1["lvl_win"])
         self.reset_level() # Usar reset_level para la configuración inicial
         self.player_last_y = 0
         self.pause_start_time = 0 # Para registrar cuándo se inicia la pausa
@@ -43,7 +53,7 @@ class Level2(Scene):
             
             if event.type == pygame.KEYDOWN:
                 # Lógica de Pausa (con la tecla P)
-                if event.key == pygame.K_p or event.key == pygame.K_RETURN:
+                if event.key == pygame.K_p:
                     if self.state == "playing":
                         self.state = "paused"
                         self.pause_start_time = pygame.time.get_ticks() # Guardar tiempo de inicio de pausa
@@ -59,25 +69,27 @@ class Level2(Scene):
                         self.sfx_thunder.play(loops=-1)
 
                 # Lógica de fin de juego y menú
-                if self.state == "gameover" and self.result == "lose":
-                    if event.key == pygame.K_r:
+
+                if self.state == "gameover":
+                    if event.key == pygame.K_RETURN and self.result == "win":
+                        self.running = False  # Avanza al siguiente nivel
+                    elif event.key == pygame.K_r:
                         self.reset_level()
                     elif event.key in (pygame.K_ESCAPE, pygame.K_m):
                         pygame.mixer.music.stop()
                         if hasattr(self, "sfx_thunder"):
                             self.sfx_thunder.stop()
                         self.running = False
-                elif self.state == "gameover" and self.result == "win":
-                    self.running = False
                 # Salir al menú desde la pausa
                 elif self.state == "paused" and event.key in (pygame.K_ESCAPE, pygame.K_m):
                     pygame.mixer.music.stop()
                     self.running = False
-            
+
     def update(self, dt):
         # Si el juego está en pausa o terminado, no se actualiza la lógica
         if self.state != "playing":
             return
+
         #camara
         self.camera_x = self.player.rect.centerx - SCREEN_WIDTH // 2
         self.camera_x = max(0, min(self.camera_x, self.level_width - SCREEN_WIDTH))
@@ -89,17 +101,38 @@ class Level2(Scene):
         if self.bg_middle_offset <= -self.level_width:
             self.bg_middle_offset = 0
 
+              
+        """Esto hace que la capa se desplace 
+        continuamente hacia la izquierda y vuelva a 
+        empezar cuando se haya movido un ancho completo."""
+        # Movimiento automático de la capa del frente (de derecha a izquierda)
+        self.bg_front_offset -= self.bg_front_speed * dt
+        if self.bg_front_offset <= -self.level_width:
+            self.bg_front_offset = 0
+        
         # Actualizar sprites
         self.all_sprites.update(dt)
-        self.all_ghosts.update(dt, self.player)
+        self.all_cannons.update(dt, self.player)
         self.group_boss.update(dt, self.player)
+     
+            # --- Movimiento y orientación del jefe ---
+        for boss in self.group_boss:
+            # Movimiento de derecha a izquierda
+            boss.rect.x += boss.speed_x * dt
 
-       
-        # -----------------------------
-        # Colisiones jugador - cangrejos
-        # -----------------------------
+            # Cambiar dirección si llega a los bordes
+            if boss.rect.right >= self.level_width or boss.rect.left <= 0:
+                boss.speed_x *= -1  # invertir dirección
+
+            # Hacer que el jefe mire al jugador
+            if boss.rect.centerx < self.player.rect.centerx:
+                boss.image = pygame.transform.flip(boss.original_image, True, False)
+            else:
+                boss.image = boss.original_image
+
+        # Detección de colisiones
         player_velocity_y = self.player.rect.y - self.player_last_y
-        player_is_falling = player_velocity_y > 0
+        player_is_falling = self.player.rect.y > self.player_last_y
         self.player_last_y = self.player.rect.y
 
         # Activar invulnerabilidad mientras cae
@@ -107,111 +140,103 @@ class Level2(Scene):
 
         # Creamos la máscara del jugador para detección precisa
         player_mask = pygame.mask.from_surface(self.player.image)
+        stomped_this_frame = False  # Para saltar solo una vez aunque haya varios cangrejos
 
-        for ghost in list(self.all_ghosts):
-            if not self.player.rect.colliderect(ghost.rect):
+        for cannon in list(self.all_cannons):
+            if not self.player.rect.colliderect(cannon.rect):
                 continue
 
-            ghost_mask = pygame.mask.from_surface(ghost.image)
-            offset = (ghost.rect.x - self.player.rect.x, ghost.rect.y - self.player.rect.y)
+            cannon_mask = pygame.mask.from_surface(cannon.image)
+            offset = (cannon.rect.x - self.player.rect.x, cannon.rect.y - self.player.rect.y)
 
-            if player_mask.overlap(ghost_mask, offset):
+            if player_mask.overlap(cannon_mask, offset):
                 stomp_threshold = max(15, player_velocity_y * 1.5)
-                is_stomp = player_is_falling and (self.player.rect.bottom - ghost.rect.top) < stomp_threshold
+                is_stomp = player_is_falling and (self.player.rect.bottom - cannon.rect.top) < stomp_threshold
 
                 if is_stomp:
-                    ghost.kill()
-                   
+                    cannon.kill()
+                    if not stomped_this_frame and hasattr(self.player, 'jump'):
+                        stomped_this_frame = True
+
                 else:
                     # Si el jugador no lo pisa, recibe daño
                     if hasattr(self.player, 'take_damage'):
-                        self.player.take_damage(10, knockback_strength=20,source_x=ghost.rect.centerx)
-
-        # -----------------------------
-        # Colisión jugador - Boss
-        # -----------------------------
-        for boss in list(self.group_boss):
-            if not self.player.rect.colliderect(boss.rect):
-                continue
-
-            boss_mask = pygame.mask.from_surface(boss.image)
-            offset = (boss.rect.x - self.player.rect.x, boss.rect.y - self.player.rect.y)
-
-            is_stomp = False  # <-- inicializar siempre
-
-            if player_mask.overlap(boss_mask, offset):
-                stomp_threshold = max(15, player_velocity_y * 1.5)
-                is_stomp = player_is_falling and (self.player.rect.bottom - boss.rect.top) < stomp_threshold
-            
-            if not is_stomp:
-                if hasattr(self.player, 'take_damage'):
-                    self.player.take_damage(20, knockback_strength=20, source_x=boss.rect.centerx)
+                        self.player.take_damage(10, knockback_strength=20,source_x=cannon.rect.centerx)
 
         # Quitar invulnerabilidad al tocar el suelo
         if self.player.rect.bottom >= LVL2_GROUND_Y:
             self.player.invulnerable_from_jump = False
-        
+
         # Actualizar temporizador
-        time_countdown = 100 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
+        time_countdown = 60 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
         self.time_text = f"{max(0, time_countdown):.0f}"
         keys = pygame.key.get_pressed()
+        #---flg_sound_died--------------------------------------------------
+        if not hasattr(self, 'sound_died_played'):
+            self.sound_died_played = False
+        #---------------------------------------------------------------
+         #---flg_sound_win---------------------------------------------------
+        if not hasattr(self, 'sound_win_played'):
+            self.sound_win_played = False
+        #-------------------------------------------------------------------
+
         # Chequear condiciones de fin de juego
         if getattr(self.player, 'health', 1) <= 0 or time_countdown <= 0 or keys[pygame.K_l]:
             self.state = "gameover"
+            #---------flag_sound_died-------------------------------------------------
+            if not self.sound_died_played:
+                self.sound_lose.play()
+                self.sound_died_played = True
+            #---------------------------------------------------------------------
             self.result = "lose"
-        elif not self.all_ghosts or keys[pygame.K_q]: 
-            self.all_ghosts.empty()
-        
-        if self.state == "playing" and not self.group_boss:
+        elif not self.all_cannons or keys[pygame.K_w]: 
+            self.state = "gameover"
+            #---------flag_sound_win--------------------------------------------------------
+            if not self.sound_win_played:
+                self.sound_win.play()
+                self.sound_win_played = True
+            #-----------------------------------------------------------------------
+             
             self.result = "win"
-            self.running = False
-
-    def respawn_ghosts(self):
-        self.all_ghosts.empty()
-        for _ in range(30):
-            randomPos = random.randint(600, self.level_width)
-            ghost = Ghost(randomPos, LVL2_GROUND_Y)
-            self.all_ghosts.add(ghost)
 
     def draw(self):
+        # Fondo
         for i, bg in enumerate(self.bg_layers):
             parallax_factor = 0.2 + i * 0.4  # 0.2, 0.6, 1.0
             bg_x = -self.camera_x * parallax_factor
 
-            # Si es la capa del medio (índice 1), aplicamos desplazamiento extra
+            # Si es la capa cercana (índice 2), aplicamos desplazamiento extra
             if i == 1:
                 bg_x += self.bg_middle_offset
 
-            self.screen.blit(bg, (bg_x, 0))
+                        # Movimiento constante hacia la izquierda para la capa frontal
+            if i == 3:  # índice 3 = nueva capa frontal
+                bg_x += self.bg_front_offset
+                # Dibujar dos veces para efecto de loop infinito
+                self.screen.blit(bg, (bg_x, 0))
+                self.screen.blit(bg, (bg_x + self.level_width, 0))
+                continue  # ya dibujamos esta capa, pasar a la siguiente
 
+            self.screen.blit(bg, (bg_x, 0))# Dibujar las demás capas normales
+
+         # Dibujar sprites desplazados por cámara
+      
+ 
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
-        for crab in self.all_ghosts:
+        for crab in self.all_cannons:
             self.screen.blit(crab.image, (crab.rect.x - self.camera_x, crab.rect.y))
         for sprite in self.group_boss:
             self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y))
-
         # UI (HUD)
         self.draw_health_bar()
-
-        # Dibujar barra de vida del boss si sigue vivo
-        for boss in self.group_boss:
-            if hasattr(boss, 'health'):
-                bar_width, bar_height = 200, 15
-                x = SCREEN_WIDTH - bar_width // 2 - 110
-                y = 20
-                ratio = max(0, boss.health / 100)
-
-                pygame.draw.rect(self.screen, (50, 50, 50), (x, y, bar_width, bar_height))
-                color = (200, 40, 40) if ratio < 0.3 else (230, 200, 0) if ratio < 0.6 else (0, 200, 70)
-                pygame.draw.rect(self.screen, color, (x, y, int(bar_width * ratio), bar_height))
-                pygame.draw.rect(self.screen, (WHITE), (x, y, bar_width, bar_height), 2)
-                
+        
         # Dibujar timer (usando el texto calculado en update)
         text_font = self.load_font(size=40)
         time_surface = text_font.render(self.time_text, True, WHITE)
         time_rect = time_surface.get_rect(center=(SCREEN_WIDTH - 100, SCREEN_HEIGHT - 20))
         self.screen.blit(time_surface, time_rect)
+
         self.draw_cursor()
         
         if self.state == "gameover":
@@ -226,10 +251,10 @@ class Level2(Scene):
         pygame.mixer.music.load(SOUNDS_LVL1["level1_sound"])
         
         self.sfx_thunder = pygame.mixer.Sound(SOUNDS_LVL1["lvl1_sound_Truenos"])
-        self.sfx_thunder.set_volume(1)
+        self.sfx_thunder.set_volume(0.5)
         self.sfx_thunder.play(loops=-1)
         pygame.mixer.music.play(-1)
-
+  
     def draw_end_overlay(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 170))
@@ -245,19 +270,12 @@ class Level2(Scene):
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)
 
-        lines = ["R - Reintentar", "M o ESC - Volver al menú"]
-        lines2 = ["Enter - Continuar"]
-        if title == "PERDISTE":
-            for i, text in enumerate(lines):
-                surf = info_font.render(text, True, WHITE)
-                rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
-                self.screen.blit(surf, rect)
-        elif title == "GANASTE":
-             for i, text in enumerate(lines2):
-                surf = info_font.render(text, True, WHITE)
-                rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
-                self.screen.blit(surf, rect)
-                
+        lines = ["Enter - Continuar"]
+        for i, text in enumerate(lines):
+            surf = info_font.render(text, True, WHITE)
+            rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
+            self.screen.blit(surf, rect)
+
     def draw_pause_overlay(self):
         """Dibuja la pantalla de pausa."""
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -279,34 +297,40 @@ class Level2(Scene):
 
     def reset_level(self):
         # Estado de juego
-        
+        self.state = "playing"
         self.result = None
         self.time_trascurrido = pygame.time.get_ticks()
         self.time_text = "20"
         self.player_last_y = 0
         self.pause_start_time = 0 # Resetear el tiempo de pausa
+        self.sound_died_played = False #sonido de muerte
+        self.sound_win_played = False #sonido victoria
 
-        # Grupos de sprites
+        
+    # Grupos de sprites
         self.all_sprites = pygame.sprite.Group()
-        self.all_ghosts = pygame.sprite.Group()
+        self.all_cannons = pygame.sprite.Group()
         self.group_boss = pygame.sprite.Group()
 
         # Crear jugador y enemigos
-        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL2_GROUND_Y, world_width=self.level_width, restriction_x=120)
+       # self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y)
+        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL1_GROUND_Y, world_width=self.level_width)
         self.all_sprites.add(self.player)
-        self.boss = Boss(LVL2_GROUND_Y,self.all_ghosts)
+        self.boss = Boss(LVL2_GROUND_Y)
         self.group_boss.add(self.boss)
 
+        
         for _ in range(30):
+            #randomPos = random.randint(0, SCREEN_WIDTH - 100)
+            # randomPos = random.randint(200, SCREEN_WIDTH*3)
             randomPos = random.randint(600, self.level_width)
-            ghost = Ghost(randomPos, LVL2_GROUND_Y)
-            self.all_ghosts.add(ghost)
+            cannon = Cannon(randomPos, LVL1_GROUND_Y)
+            self.all_cannons.add(cannon)
 
         # Resetear fondo
         self.bg_x1 = 0
         self.bg_x2 = SCREEN_WIDTH
-        if self.group_boss:
-            self.state = "playing"
+        
 
     def draw_health_bar(self):
         if not hasattr(self, 'player') or self.player is None: return
@@ -339,17 +363,14 @@ class Level2(Scene):
             self.screen.blit(text_surf, text_rect)
         except Exception:
             pass # Fallo silencioso si la fuente no carga
-
+        
     def run(self):
-            self.running = True
-            while self.running:
-                dt = self.clock.tick(FPS) / 1000
-                self.handle_events()
-                self.draw()
-                self.update(dt)
-                pygame.display.flip()
-
-            gameover = GameOver(self.screen)
-            gameover.run()
-            
-    
+        self.running = True
+        while self.running:
+            dt = self.clock.tick(FPS) / 1000
+            self.handle_events()
+            self.update(dt)
+            self.draw()
+            pygame.display.flip()
+        level3 = Level3(self.screen)
+        level3.run()

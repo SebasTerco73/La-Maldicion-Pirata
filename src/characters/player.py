@@ -4,7 +4,7 @@ from settings import IMAGES, SCREEN_WIDTH, SOUNDS_PLAYER
 from .events import GameEvents, EventSystem  # Use relative import if events.py is in the same directory
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, ground_y, world_width=None, restriction_x=0):
+    def __init__(self, x, y, ground_y, world_width=None, restriction_x=0, jump=-550):
         super().__init__()
         spritesheet = pygame.image.load(IMAGES["player-walk"]).convert_alpha()
         spritesheet_jump = pygame.image.load(IMAGES["player-jump"]).convert_alpha()      
@@ -30,7 +30,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = 200
         self.gravity = 1500
         # self.jump_strength = -550
-        self.jump_strength = -800
+        self.jump_strength = jump
         self.on_ground = False
         self.ground_y = ground_y
         self.world_width = world_width if world_width is not None else SCREEN_WIDTH

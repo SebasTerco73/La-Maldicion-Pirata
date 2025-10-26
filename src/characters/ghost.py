@@ -1,6 +1,6 @@
 import pygame
 import random
-from settings import IMAGES_LVL2 as ENEMIES
+from settings import IMAGES_LVL2 as ENEMIES, SOUNDS_LVL2
 from settings import SCREEN_WIDTH
 from .character import Character
 
@@ -13,6 +13,7 @@ class Ghost(Character):
         self.original_image = self.image.copy()
         # Física básica
         self.vel_y = 0.0
+        self.sound_dead = pygame.mixer.Sound(SOUNDS_LVL2["ghost_died"])
         self.world_widht = SCREEN_WIDTH * 3
         self.gravity = 300.0
         self.on_ground = True
@@ -93,6 +94,7 @@ class Ghost(Character):
             if is_falling and player_bottom < enemy_top + collision_threshold:
                 # El jugador elimina al cangrejo
                 self.kill()  # Elimina el sprite de todos los grupos
+                self.sound_dead.play()
                 # Dar un pequeño rebote al jugador
                 if hasattr(player, 'jump_strength'):
                     player.vel_y = player.jump_strength * 0.5  # La mitad de la fuerza de salto normal

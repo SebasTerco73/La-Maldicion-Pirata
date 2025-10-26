@@ -1,21 +1,23 @@
 import pygame
 import random
-from settings import IMAGES_LVL1 as ENEMIES, SCREEN_WIDTH, SOUNDS_LVL1
+from settings import IMAGES_LVL2 as ENEMIES
+
+from settings import SCREEN_WIDTH, SOUNDS_LVL2
 from .character import Character
 
 
-class Crab(Character):
+class Cannon(Character):
     def __init__(self, x, ground):
         # Sitúa al cangrejo sobre el suelo (bottom = ground)
         y = ground - 50
-        super().__init__(ENEMIES["enemy_crab"], x, y, width=50, height=50, speed=120)
+        super().__init__(ENEMIES["enemy_cannon"], x, y, width=50, height=50, speed=500)
+        self.original_image = self.image.copy()
         # Física básica
-        self.world_widht = SCREEN_WIDTH * 3
         self.vel_y = 0.0
+        self.world_widht = SCREEN_WIDTH * 3
         self.gravity = 300.0
         self.on_ground = True
         self.ground_y = ground
-        self.sound_kill = pygame.mixer.Sound(SOUNDS_LVL1["crab_died"])
         # Movimiento
         self.direction = random.choice([-1, 1])
         self.movement_timer = 0.0
@@ -24,6 +26,7 @@ class Crab(Character):
         self.damage = 10
         self.attack_cooldown = 1.0  # Segundos entre ataques
         self.attack_timer = 0.0
+        self.died = pygame.mixer.Sound(SOUNDS_LVL2["ghost_died"])
 
     def apply_gravity(self, dt):
         self.vel_y += self.gravity * dt
@@ -35,17 +38,19 @@ class Crab(Character):
 
     def clamp_to_world(self):
         """Evita que el jugador salga de los límites del mundo (no solo de la pantalla)."""
-        if self.rect.left < 120:
-            self.rect.left = 120
+        if self.rect.left < 0:
+            self.rect.left = 0
             self.direction *= -1  # Invertir dirección
              
         if self.rect.right > self.world_widht:
             self.rect.right = self.world_widht
 
+
     def move_pattern(self, dt):
-        """
-        Implementa el patrón de movimiento del cangrejo
-        """
+
+        # Guardar la dirección anterior
+        previous_direction = self.direction
+
         # Actualizar temporizador de movimiento
         self.movement_timer += dt
 
@@ -59,7 +64,15 @@ class Crab(Character):
         self.rect.x += int(self.speed * self.direction * dt)
 
         # Mantener al cangrejo dentro de la pantalla
-        # self.clamp_to_screen()
+        self.clamp_to_world()
+
+        # -----------------------------
+        # Ajustar la imagen según dirección
+        # -----------------------------
+        if self.direction > 0:  # moviéndose a la derecha
+            self.image = pygame.transform.flip(self.original_image, True, False)
+        else:  # moviéndose a la izquierda
+            self.image = self.original_image
 
     def check_collision_with_player(self, player) -> bool:
         """
@@ -81,9 +94,8 @@ class Crab(Character):
 
             if is_falling and player_bottom < enemy_top + collision_threshold:
                 # El jugador elimina al cangrejo
-                self.sound_kill.play()
+                self.died.play()
                 self.kill()  # Elimina el sprite de todos los grupos
-                
                 # Dar un pequeño rebote al jugador
                 if hasattr(player, 'jump_strength'):
                     player.vel_y = player.jump_strength * 0.5  # La mitad de la fuerza de salto normal
@@ -109,7 +121,6 @@ class Crab(Character):
 
         # Mover el cangrejo
         self.move_pattern(dt)
-        self.clamp_to_world()
 
         # Actualizar temporizador de ataque
         if self.attack_timer > 0.0:

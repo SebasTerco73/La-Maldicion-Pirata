@@ -50,12 +50,13 @@ class Menu(Scene):
     def init_audio(self):
         if not pygame.mixer.get_init():
             pygame.mixer.init()
-        pygame.mixer.music.set_volume(0.2)
+        pygame.mixer.music.set_volume(0.9)
         pygame.mixer.music.load(SOUNDS_MENU["menu_music"])
         pygame.mixer.music.play(-1)
         self.move_sound = pygame.mixer.Sound(SOUNDS_MENU["menu_move"])
         self.move_enter = pygame.mixer.Sound(SOUNDS_MENU["menu_enter"])
         self.move_salir = pygame.mixer.Sound(SOUNDS_MENU["menu_salir"])
+        self.move_intro = pygame.mixer.Sound(SOUNDS_MENU["intro_music"])
     
     def handle_events(self):
         for event in pygame.event.get():
@@ -92,10 +93,19 @@ class Menu(Scene):
                 self.move_enter.play()
                 pygame.time.delay(200)
                 pygame.mixer.music.stop()
+               # pygame.mixer.Sound.stop(self.move_enter)
+              
+                    #  Reproducir animación de inicio
+                self.move_intro.play() 
+                self.play_start_animation()
+                 
+                #  Iniciar el juego después de la animación
                 level1 = Level1(self.screen)
                 level1.run()
+
                 # Al regresar del nivel, reiniciar música del menú
                 self.init_audio()
+             
         if self.selected_index == 1:
                 self.move_enter.play()
                 options = Options(self.screen)
@@ -106,6 +116,53 @@ class Menu(Scene):
                 pygame.time.wait(int(self.move_salir.get_length() * 1000))  # Espera solo la duración del sonido salir
                 pygame.quit()
                 sys.exit()
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------
+    """Reproduce una animación antes de iniciar el juego."""
+
+    def play_start_animation(self):
+        
+        clock = pygame.time.Clock()
+
+        # Cargar frames
+        frames = [
+            pygame.image.load(path).convert_alpha()
+            for path in IMAGES_MENU["start_anim_frames"]
+        ]
+        frames = [
+            pygame.transform.scale(f, (SCREEN_WIDTH, SCREEN_HEIGHT)) for f in frames
+        ]
+
+        frame_duration = 100  # milisegundos por frame (0.1 seg)
+        current_frame = 0
+        last_update = pygame.time.get_ticks()
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            now = pygame.time.get_ticks()
+            if now - last_update > frame_duration:
+                current_frame += 1
+                last_update = now
+                if current_frame >= len(frames):
+                    running = False  # termina animación
+
+            if current_frame < len(frames):
+                self.screen.blit(frames[current_frame], (0, 0))
+            pygame.display.flip()
+            clock.tick(60)
+                # Detener música de introducción (opcional)
+        self.move_intro.stop()
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
     def run(self):
         self.draw()
         self.handle_events()
