@@ -146,7 +146,7 @@ class Level3(Scene):
                     offset = (bullet.rect.x - self.player.rect.x, bullet.rect.y - self.player.rect.y)
 
                     if player_mask.overlap(bullet_mask, offset):
-                            self.player.take_damage(10, knockback_strength=15, source_x=bullet.rect.centerx, ignore_invulnerability=True)
+                            self.player.take_damage(30, knockback_strength=15, source_x=bullet.rect.centerx, ignore_invulnerability=True)
                             bullet.kill()
             if not self.player.rect.colliderect(boss.rect):
                 continue

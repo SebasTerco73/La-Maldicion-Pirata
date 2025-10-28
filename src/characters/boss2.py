@@ -63,7 +63,6 @@ class Boss2(Character):
                 # Golpe al boss desde arriba
                 self.take_damage(25)
                 self.take_damage_sound.play()
-                
 
                 # Rebote vertical fuerte
                 push_distance = player.rect.x  # Distancia hasta la izquierda
