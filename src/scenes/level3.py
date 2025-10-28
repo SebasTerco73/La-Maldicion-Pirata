@@ -2,7 +2,7 @@ import random
 import pygame
 import sys
 import settings
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL2_GROUND_Y, WHITE
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL2_GROUND_Y, WHITE, SOUNDS_LVL3
 from .scene import Scene
 from characters.player import Player
 from characters.ghost import Ghost 
@@ -118,11 +118,15 @@ class Level3(Scene):
             offset = (ghost.rect.x - self.player.rect.x, ghost.rect.y - self.player.rect.y)
 
             if player_mask.overlap(ghost_mask, offset):
-                stomp_threshold = max(15, player_velocity_y * 1.5)
+                stomp_threshold = max(15, player_velocity_y * 2.0)
                 is_stomp = player_is_falling and (self.player.rect.bottom - ghost.rect.top) < stomp_threshold
 
                 if is_stomp:
                     ghost.kill()
+                    # 🔥 Rebote garantizado (aunque ya esté un poco "adentro" del enemigo)
+                    rebound = -abs(getattr(self.player, 'jump_strength', -800)) * 1
+                    self.player.vel_y = rebound
+                    self.player.on_ground = False
                     
                 else:
                     # Si el jugador no lo pisa, recibe daño
@@ -252,6 +256,8 @@ class Level3(Scene):
         self.sfx_thunder.set_volume(1)
         self.sfx_thunder.play(loops=-1)
         pygame.mixer.music.play(-1)
+        cannon_init = pygame.mixer.Sound(SOUNDS_LVL3["cannon_ready"])
+        cannon_init.play()
 
     def draw_end_overlay(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)

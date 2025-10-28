@@ -63,7 +63,11 @@ SOUNDS_LVL1 = {
 }
 
 SOUNDS_LVL3 = {
-    "ghost_died":"assets/sounds/ghost_died.mp3" 
+    "ghost_died":"assets/sounds/ghost_died.mp3", 
+    "cannon_ready":"assets/sounds/cannon-ready.mp3",
+    "cannon_fire":"assets/sounds/cannon-fire.mp3",
+    "boss_damage":"assets/sounds/boss_damage.mp3",
+    "boss_kill": "assets/sounds/bossKill.mp3"
 }
 
 IMAGES_LVL2= {

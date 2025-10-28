@@ -97,7 +97,7 @@ class Ghost(Character):
                 self.sound_dead.play()
                 # Dar un pequeño rebote al jugador
                 if hasattr(player, 'jump_strength'):
-                    player.vel_y = player.jump_strength * 0.5  # La mitad de la fuerza de salto normal
+                    player.vel_y = player.jump_strength * 1  # La mitad de la fuerza de salto normal
                 player.on_ground = False
                 return True
             else:

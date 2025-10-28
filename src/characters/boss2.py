@@ -1,6 +1,6 @@
 import pygame
 import random
-from settings import IMAGES_LVL2 as ENEMIES, SCREEN_WIDTH
+from settings import IMAGES_LVL2 as ENEMIES, SCREEN_WIDTH, SOUNDS_LVL3
 from .character import Character
 from .ghost import Ghost
 from .cannonBoss import CannonBoss
@@ -14,6 +14,8 @@ class Boss2(Character):
         x = SCREEN_WIDTH * 3 - 150
         super().__init__(ENEMIES["enemy_boss"], x, y, width=150, height=150)
         self.ghost_group = ghost_group
+        self.take_damage_sound =pygame.mixer.Sound(SOUNDS_LVL3["boss_damage"]) 
+        self.death_sound = pygame.mixer.Sound(SOUNDS_LVL3["boss_kill"])
 
         # Propiedades de daño
         self.damage = 20
@@ -22,8 +24,8 @@ class Boss2(Character):
         self.health = 100 # Aca va 100
 
           # 🔫 Sistema de disparo
-        self.shoot_cooldown = 5.5  # cada 2.5 segundos
-        self.shoot_timer = 0.0
+        self.shoot_cooldown = 10
+        self.shoot_timer = 7.0
         self.bullets = pygame.sprite.Group()
 
     def shoot(self, player):
@@ -59,7 +61,9 @@ class Boss2(Character):
 
             if is_falling and player_bottom < enemy_top + collision_threshold:
                 # Golpe al boss desde arriba
-                self.take_damage(20)
+                self.take_damage(25)
+                self.take_damage_sound.play()
+                
 
                 # Rebote vertical fuerte
                 push_distance = player.rect.x  # Distancia hasta la izquierda
@@ -92,6 +96,7 @@ class Boss2(Character):
     def take_damage(self, amount):
         """Reduce la vida del boss y lo elimina si llega a 0."""
         self.health -= amount
+        self.bullets.empty()
         if self.health <= 0:
             self.health = 0
             # Contar la muerte del boss como puntaje y eliminar
@@ -104,7 +109,13 @@ class Boss2(Character):
                 except Exception:
                     pass
             try:
-                self.kill()  # elimina al boss del juego
+                self.death_sound.play()
+                # Calcular duración del sonido
+                wait_time_ms = int(self.death_sound.get_length() * 1000)
+                # Esperar a que termine
+                pygame.time.delay(wait_time_ms)
+                # Finalmente eliminar al jefe
+                self.kill()
             except Exception:
                 pass
         else:

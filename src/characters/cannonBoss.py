@@ -1,6 +1,6 @@
 # characters/boss_bullet.py
 import pygame
-from settings import SCREEN_WIDTH, IMAGES_LVL3
+from settings import SCREEN_WIDTH, IMAGES_LVL3, SOUNDS_LVL3
 
 
 class CannonBoss(pygame.sprite.Sprite):
@@ -11,6 +11,8 @@ class CannonBoss(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(x, y))
         self.direction = direction  # 1 = derecha, -1 = izquierda
         self.speed = speed
+        self.cannon_fire = pygame.mixer.Sound(SOUNDS_LVL3["cannon_fire"])
+        self.cannon_fire.play()
 
     def update(self, dt):
         # Movimiento horizontal
