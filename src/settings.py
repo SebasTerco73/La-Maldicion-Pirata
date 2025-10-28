@@ -35,8 +35,9 @@ IMAGES_LVL3= {
     "bg_near": "assets/images/lvl2_bg2.png",
     "enemy_ghost": "assets/images/ghost.png",
     "enemy_boss":"assets/images/boss.png",
-    
+    "cannon_boss":"assets/images/cannonBoss.png"
 }
+
 # --- Sonidos ---
 SOUNDS_MENU = {
     "menu_music": "assets/sounds/menu_sound.mp3",

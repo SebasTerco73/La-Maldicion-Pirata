@@ -144,7 +144,7 @@ class Level1(Scene):
         if getattr(self.player, 'health', 1) <= 0 or time_countdown <= 0 or keys[pygame.K_l]:
             self.state = "gameover"
             self.result = "lose"
-        elif not self.all_crabs or keys[pygame.K_w]: 
+        elif not self.all_crabs or keys[pygame.K_q]: 
             self.state = "gameover"
             self.result = "win"
 

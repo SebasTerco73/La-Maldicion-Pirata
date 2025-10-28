@@ -3,6 +3,7 @@ import random
 from settings import IMAGES_LVL2 as ENEMIES, SCREEN_WIDTH
 from .character import Character
 from .ghost import Ghost
+from .cannonBoss import CannonBoss
 
 
 class Boss2(Character):
@@ -19,6 +20,19 @@ class Boss2(Character):
         self.attack_cooldown = 1.0  # Segundos entre ataques
         self.attack_timer = 0.0
         self.health = 100 # Aca va 100
+
+          # 🔫 Sistema de disparo
+        self.shoot_cooldown = 5.5  # cada 2.5 segundos
+        self.shoot_timer = 0.0
+        self.bullets = pygame.sprite.Group()
+
+    def shoot(self, player):
+        # Determinar dirección hacia el jugador
+        direction = -1 if player.rect.centerx < self.rect.centerx else 1
+        bullet_y = self.rect.centery
+        bullet_x = self.rect.centerx + (direction * 60)
+        bullet = CannonBoss(bullet_x, bullet_y, direction)
+        self.bullets.add(bullet)
 
     def regenerate_ghosts(self):
         for _ in range(20):
@@ -98,10 +112,20 @@ class Boss2(Character):
             self.regenerate_ghosts()
 
     def update(self, dt, player=None):
-        # Actualizar temporizador de ataque
+        # Actualizar temporizadores
         if self.attack_timer > 0.0:
             self.attack_timer -= dt
+        if self.shoot_timer > 0.0:
+            self.shoot_timer -= dt
 
-        # Si se pasó player, chequear colisión
+        # Verificar disparo
+        if self.shoot_timer <= 0.0 and player:
+            self.shoot(player)
+            self.shoot_timer = self.shoot_cooldown
+
+        # Actualizar balas
+        self.bullets.update(dt)
+
+        # Chequear colisión con jugador
         self.check_collision_with_player(player)
 

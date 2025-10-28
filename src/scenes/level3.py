@@ -133,6 +133,17 @@ class Level3(Scene):
         # Colisión jugador - Boss
         # -----------------------------
         for boss in list(self.group_boss):
+            boss.update(dt, self.player)
+            # Colisiones bala-jugador
+            for bullet in list(boss.bullets):
+                if bullet.rect.colliderect(self.player.rect):
+                    bullet_mask = pygame.mask.from_surface(bullet.image)
+                    player_mask = pygame.mask.from_surface(self.player.image)
+                    offset = (bullet.rect.x - self.player.rect.x, bullet.rect.y - self.player.rect.y)
+
+                    if player_mask.overlap(bullet_mask, offset):
+                            self.player.take_damage(10, knockback_strength=15, source_x=bullet.rect.centerx, ignore_invulnerability=True)
+                            bullet.kill()
             if not self.player.rect.colliderect(boss.rect):
                 continue
 
@@ -154,7 +165,7 @@ class Level3(Scene):
             self.player.invulnerable_from_jump = False
         
         # Actualizar temporizador
-        time_countdown = 100 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
+        time_countdown = 180 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
         self.time_text = f"{max(0, time_countdown):.0f}"
         keys = pygame.key.get_pressed()
         # Chequear condiciones de fin de juego
@@ -215,6 +226,9 @@ class Level3(Scene):
                 color = (200, 40, 40) if ratio < 0.3 else (230, 200, 0) if ratio < 0.6 else (0, 200, 70)
                 pygame.draw.rect(self.screen, color, (x, y, int(bar_width * ratio), bar_height))
                 pygame.draw.rect(self.screen, (WHITE), (x, y, bar_width, bar_height), 2)
+                for boss in self.group_boss:
+                    for bullet in boss.bullets:
+                        self.screen.blit(bullet.image, (bullet.rect.x - self.camera_x, bullet.rect.y))
                 
         # Dibujar timer (usando el texto calculado en update)
         text_font = self.load_font(size=40)
@@ -303,7 +317,7 @@ class Level3(Scene):
         self.score = 0
 
         # Crear jugador y enemigos
-        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL2_GROUND_Y, world_width=self.level_width, restriction_x=120, jump=-750)
+        self.player = Player(SCREEN_WIDTH/2 - 140, 0, LVL2_GROUND_Y, world_width=self.level_width, restriction_x=120, jump=-800)
         self.all_sprites.add(self.player)
         self.boss = Boss2(LVL2_GROUND_Y,self.all_ghosts)
         self.group_boss.add(self.boss)
@@ -365,8 +379,8 @@ class Level3(Scene):
                 settings.GLOBAL_SCORE += getattr(self, 'score', 0)
             except Exception:
                 pass
-
-            gameover = GameOver(self.screen)
-            gameover.run()
+            if (self.result == "win"):
+                gameover = GameOver(self.screen)
+                gameover.run()
             
     

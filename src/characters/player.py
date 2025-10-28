@@ -197,7 +197,7 @@ class Player(pygame.sprite.Sprite):
 
         self.knockback_vel_x = strength * direction
 
-    def take_damage(self, amount, knockback_strength=0, source_x=None):
+    def take_damage(self, amount, knockback_strength=0, source_x=None, ignore_invulnerability=False):
         
         if knockback_strength and source_x is not None:
             if self.rect.centerx < source_x:
@@ -207,7 +207,7 @@ class Player(pygame.sprite.Sprite):
 
         if amount <= 0:
             return
-        if self.invulnerable_from_jump or self.invulnerable_from_damage:
+        if (self.invulnerable_from_jump and not ignore_invulnerability) or self.invulnerable_from_damage :
             return
         # No aplicar daño si está invulnerable
         if getattr(self, 'invulnerable_from_hit', False):

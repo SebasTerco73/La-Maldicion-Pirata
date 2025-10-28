@@ -190,7 +190,7 @@ class Level2(Scene):
                 self.sound_died_played = True
             #---------------------------------------------------------------------
             self.result = "lose"
-        elif not self.all_cannons or keys[pygame.K_w]: 
+        elif not self.all_cannons or keys[pygame.K_q]: 
             self.state = "gameover"
             #---------flag_sound_win--------------------------------------------------------
             if not self.sound_win_played:
@@ -328,7 +328,7 @@ class Level2(Scene):
         for _ in range(30):
             #randomPos = random.randint(0, SCREEN_WIDTH - 100)
             # randomPos = random.randint(200, SCREEN_WIDTH*3)
-            randomPos = random.randint(600, self.level_width)
+            randomPos = random.randint(900, self.level_width)
             cannon = Cannon(randomPos, LVL1_GROUND_Y)
             try:
                 cannon.scene = self
