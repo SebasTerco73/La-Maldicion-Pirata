@@ -169,7 +169,7 @@ class Level3(Scene):
             self.player.invulnerable_from_jump = False
         
         # Actualizar temporizador
-        time_countdown = 180 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
+        time_countdown = 120 - (pygame.time.get_ticks() - self.time_trascurrido) / 1000
         self.time_text = f"{max(0, time_countdown):.0f}"
         keys = pygame.key.get_pressed()
         # Chequear condiciones de fin de juego
