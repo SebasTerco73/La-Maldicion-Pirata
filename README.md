@@ -12,6 +12,9 @@ pero descubre que en la isla se encuentra la mansión del antiguo capitán de lo
 está mansión se encuentra embrujada por su tripulación que son fantasmas obsesionados por cumplir los deseos del capitán. 
 Nuestra misión será escapar sanos y salvos con el tesoro evitando que la tripulación maldita nos capture y nos convirtamos en uno más de la tripulación del capitán
 
+<img width="788" height="602" alt="image" src="https://github.com/user-attachments/assets/17753106-d6fb-4395-8736-cbfb871a43bf" />
+
+
 ## 🚀 Características
 
 - Movimiento lateral del jugador.
@@ -44,6 +47,7 @@ pip install pygame
 | :---: | :---: | :---: | :---: | :---: |
 
 <img width="400" height="250" alt="image" src="https://github.com/user-attachments/assets/1afd8a49-2d79-45b1-85e3-c3092bb456fc" />
+
 
 
 
