@@ -2,7 +2,7 @@ import random
 import pygame
 import sys
 import settings
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL2_GROUND_Y, WHITE, SOUNDS_LVL3
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, IMAGES_LVL2, SOUNDS_LVL1, LVL2_GROUND_Y, WHITE, SOUNDS_LVL3, IMAGES_LVL3
 from .scene import Scene
 from characters.player import Player
 from characters.ghost import Ghost 
@@ -15,7 +15,7 @@ class Level3(Scene):
         self.clock = pygame.time.Clock()
         self.bg_middle_offset = 0  # desplazamiento horizontal acumulado de la capa media
         self.bg_middle_speed = 30  # velocidad de desplazamiento hacia la izquierda (px/seg)
-
+        self.gameover_image = pygame.image.load(IMAGES_LVL3["bg_looes_lvl3"]).convert()
         self.level_width = SCREEN_WIDTH * 3
         self.bg_layers = [     
             pygame.image.load(IMAGES_LVL2["bg_far"]).convert_alpha(),
@@ -269,7 +269,8 @@ class Level3(Scene):
 
         title_font = self.load_font(size=72)
         info_font = self.load_font(size=28)
-
+        if title == "PERDISTE":
+            self.screen.blit(self.gameover_image, (0, 0))
         title_surf = title_font.render(title, True, title_color)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)

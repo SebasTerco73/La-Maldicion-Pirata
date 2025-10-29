@@ -13,7 +13,7 @@ class Level2(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.clock = pygame.time.Clock()
-        
+        self.gameover_image = pygame.image.load(IMAGES_LVL2["bg_looes_lvl2"]).convert()
         self.bg_middle_offset = 0  # desplazamiento horizontal acumulado( de la capa media)
         self.bg_middle_speed = 30  # velocidad de desplazamiento hacia la izquierda (px/seg)
 
@@ -268,16 +268,23 @@ class Level2(Scene):
 
         title_font = self.load_font(size=72)
         info_font = self.load_font(size=28)
-
+        if title == "PERDISTE":
+            self.screen.blit(self.gameover_image, (0, 0))
         title_surf = title_font.render(title, True, title_color)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)
-
-        lines = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_lines_win', ["Enter - Continuar"])
-        for i, text in enumerate(lines):
-            surf = info_font.render(text, True, WHITE)
-            rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
-            self.screen.blit(surf, rect)
+        lines = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_lines_lose', ["R - Reintentar", "M o ESC - Volver al menú"])
+        lines2 = settings.TEXTS.get(settings.LANGUAGE, {}).get('end_lines_win', ["Enter - Continuar"])
+        if self.result == "lose":
+            for i, text in enumerate(lines):
+                surf = info_font.render(text, True, WHITE)
+                rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
+                self.screen.blit(surf, rect)
+        elif self.result == "win":
+             for i, text in enumerate(lines2):
+                surf = info_font.render(text, True, WHITE)
+                rect = surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 30 + i * 36))
+                self.screen.blit(surf, rect)
 
     def draw_pause_overlay(self):
         """Dibuja la pantalla de pausa."""
@@ -373,6 +380,44 @@ class Level2(Scene):
         except Exception:
             pass # Fallo silencioso si la fuente no carga
         
+    def play_start_animation(self):
+        
+            clock = pygame.time.Clock()
+
+            # Cargar frames
+            frames = [
+                pygame.image.load(path).convert_alpha()
+                for path in IMAGES_LVL2["start_anim_frames"]
+            ]
+            frames = [
+                pygame.transform.scale(f, (SCREEN_WIDTH, SCREEN_HEIGHT)) for f in frames
+            ]
+
+            frame_duration = 80  # milisegundos por frame (0.25 seg)
+            current_frame = 0
+            last_update = pygame.time.get_ticks()
+
+    
+
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+
+                now = pygame.time.get_ticks()
+                if now - last_update > frame_duration:
+                    current_frame += 1
+                    last_update = now
+                    if current_frame >= len(frames):
+                        running = False  # termina animación
+
+                if current_frame < len(frames):
+                    self.screen.blit(frames[current_frame], (0, 0))
+                pygame.display.flip()
+                clock.tick(60)
+        
     def run(self):
         self.running = True
         while self.running:
@@ -386,6 +431,6 @@ class Level2(Scene):
             settings.GLOBAL_SCORE += getattr(self, 'score', 0)
         except Exception:
             pass
-
+        self.play_start_animation()
         level3 = Level3(self.screen)
         level3.run()

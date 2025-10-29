@@ -1,4 +1,4 @@
-# main.py
+#main.py
 import pygame
 import sys
 from scenes.menu import Menu

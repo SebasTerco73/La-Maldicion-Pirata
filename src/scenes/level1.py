@@ -13,7 +13,7 @@ class Level1(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.clock = pygame.time.Clock()
-       
+        self.gameover_image = pygame.image.load(IMAGES_LVL1["bg_looes_lvl1"]).convert()
         self.bg_middle_offset = 0  # desplazamiento horizontal acumulado de la capa media
         self.bg_middle_speed = 30  # velocidad de desplazamiento hacia la izquierda (px/seg)
 
@@ -208,7 +208,8 @@ class Level1(Scene):
 
         title_font = self.load_font(size=72)
         info_font = self.load_font(size=28)
-
+        if title == "PERDISTE":
+            self.screen.blit(self.gameover_image, (0, 0))
         title_surf = title_font.render(title, True, title_color)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
         self.screen.blit(title_surf, title_rect)

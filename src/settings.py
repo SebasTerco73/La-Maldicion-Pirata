@@ -26,7 +26,8 @@ IMAGES_LVL1 = {
     "bg_near": "assets/images/bg_near.PNG",
     "start_anim_frames": [
         f"assets/images/cinem_finlvl1/frame_{i:02d}.png" for i in range(1, 10)
-    ]
+    ],
+    "bg_looes_lvl1": "assets/images/loose_lvl1.JPEG",
 }
 
 IMAGES_LVL3= {
@@ -35,7 +36,8 @@ IMAGES_LVL3= {
     "bg_near": "assets/images/lvl2_bg2.png",
     "enemy_ghost": "assets/images/ghost.png",
     "enemy_boss":"assets/images/boss.png",
-    "cannon_boss":"assets/images/cannonBoss.png"
+    "cannon_boss":"assets/images/cannonBoss.png",
+    "bg_looes_lvl3": "assets/images/loose_lvl3.JPEG",
 }
 
 # --- Sonidos ---
@@ -78,8 +80,11 @@ IMAGES_LVL2= {
     "bg_front": "assets/images/fantass2.png",
     "enemy_ghost": "assets/images/ghost.png",
     "enemy_cannon": "assets/images/cannon.png", 
- 
-    "enemy_boss":"assets/images/boss.png"  
+    "bg_looes_lvl2": "assets/images/loose_lvl2.JPEG",
+    "enemy_boss":"assets/images/boss.png" ,
+    "start_anim_frames": [
+        f"assets/images/cinem_finlvl2/frame_{i:02d}.png" for i in range(1, 31)
+    ], 
 }
 
 SOUNDS_LVL2 = {
