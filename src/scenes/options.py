@@ -2,11 +2,10 @@
 import pygame
 import sys
 import settings
-from settings import IMAGES, IMAGES_MENU, SOUNDS_MENU, BLUE, WHITE, RED, FPS, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN
+from settings import IMAGES_MENU, SOUNDS_MENU, BLUE, RED, FPS, SCREEN_HEIGHT, SCREEN_WIDTH, MENU_MARGIN
 #.scene porque esta dentro del mismo paquete
 from .scene import Scene
-from .level1 import Level1
-
+from .dataSave import saveSettings
 class Options(Scene):
     def __init__(self, screen):
         super().__init__(screen) 
@@ -173,7 +172,7 @@ class Options(Scene):
                         self.volume_level = min(10, self.volume_level + 1)
                         self.set_volume()
                         self.move_sound.play()
-
+                    
             # mouse hover
             elif event.type == pygame.MOUSEMOTION:
                 mouse_pos = event.pos
@@ -230,4 +229,5 @@ class Options(Scene):
             pygame.display.flip() # Actualiza 
             self.clock.tick(FPS) # velocidad del bucle 60 FPS (frames por segundo).
             if self.selected_index == 3 and pressedKey:
+                saveSettings("volume", self.volume_level)
                 running = False

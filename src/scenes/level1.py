@@ -208,7 +208,7 @@ class Level1(Scene):
 
         title_font = self.load_font(size=72)
         info_font = self.load_font(size=28)
-        if title == "PERDISTE":
+        if title == "PERDISTE" or title == "你输了" or title == "YOU LOST":
             self.screen.blit(self.gameover_image, (0, 0))
         title_surf = title_font.render(title, True, title_color)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
